@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声影 · 素材库</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1e27; --line:#2a3040; --fg:#e8eaf0; --dim:#9aa3b5; --accent:#5b8cff; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font-family: "Microsoft YaHei", system-ui, sans-serif; padding: 24px; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  .sub { color: var(--dim); font-size: 13px; margin-bottom: 20px; }
+  .bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .bar input, .bar select { background: var(--card); border: 1px solid var(--line); color: var(--fg);
+    border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
+  .bar input { width: 220px; }
+  .stats { color: var(--dim); font-size: 13px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .tag { font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 2px 8px; }
+  .tag.warn { color: #f0b35b; border-color: #6b5326; }
+  .desc { color: var(--dim); font-size: 12px; margin: 6px 0 12px; }
+  .sample { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
+  .sample .emo { width: 40px; font-size: 13px; flex: none; }
+  .sample audio { flex: 1; height: 30px; min-width: 0; }
+  .note { font-size: 11px; color: #f0b35b; }
+  .empty { color: var(--dim); padding: 40px; text-align: center; }
+</style>
+</head>
+<body>
+<h1>声影 · 音频素材库</h1>
+<div class="sub">人物音色 / 音效 / 环境音 · 本地素材服务</div>
+<div class="bar">
+  <input id="q" type="search" placeholder="搜索音色名称或描述…">
+  <select id="gender">
+    <option value="">全部性别</option>
+    <option value="male">男声</option>
+    <option value="female">女声</option>
+    <option value="unknown">待确认</option>
+  </select>
+  <select id="emotion"><option value="">全部情绪</option></select>
+</div>
+<div class="stats" id="stats"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const grid = document.getElementById('grid');
+const stats = document.getElementById('stats');
+const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
+let debounce;
+
+async function boot() {
+  const s = await (await fetch('/api/library/summary')).json();
+  s.emotions.forEach(e => {
+    const o = document.createElement('option'); o.value = o.textContent = e;
+    els.emotion.appendChild(o);
+  });
+  load();
+}
+
+async function load() {
+  const p = new URLSearchParams({ q: els.q.value, gender: els.gender.value, emotion: els.emotion.value });
+  const [summary, data] = await Promise.all([
+    fetch('/api/library/summary').then(r => r.json()),
+    fetch('/api/voices?' + p).then(r => r.json()),
+  ]);
+  stats.textContent = `音色 ${summary.voices} 种 · 样本 ${summary.voice_samples} 条 · 音效 ${summary.sfx} · 环境音 ${summary.ambience}`;
+  grid.innerHTML = '';
+  if (!data.items.length) { grid.innerHTML = '<div class="empty">没有匹配的音色</div>'; return; }
+  for (const v of data.items) {
+    const card = document.createElement('div'); card.className = 'card';
+    const genderText = { male: '男声', female: '女声', unknown: '待确认' }[v.gender] || v.gender;
+    const warn = v.known_issues.length ? `<span class="tag warn">${v.known_issues.length} 条待复核</span>` : '';
+    card.innerHTML = `<h2>${v.name} <span class="tag">${genderText}</span> <span class="tag">${v.version}</span> ${warn}</h2>
+      <div class="desc">${v.description || ''} · ${v.voice_id}</div>`;
+    for (const s of v.samples) {
+      const row = document.createElement('div'); row.className = 'sample';
+      const note = (s.notes && s.notes.length) ? ` <span class="note" title="${s.notes.join('；')}">⚠</span>` : '';
+      row.innerHTML = `<span class="emo">${s.emotion}${note}</span><audio controls preload="none" src="${s.url}"></audio>`;
+      card.appendChild(row);
+    }
+    grid.appendChild(card);
+  }
+}
+
+for (const el of Object.values(els)) {
+  el.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(load, 250); });
+}
+boot();
+</script>
+</body>
+</html>

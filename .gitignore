@@ -10,6 +10,12 @@ models/
 # 第三方源码（各自持有上游 git 仓库，本地研究用）
 third_party/
 
+# 离线安装包（大体积 whl，本地留存方便团队复用）
+packages/
+
+# 测试与生成输出
+outputs/
+
 # Python
 __pycache__/
 *.pyc

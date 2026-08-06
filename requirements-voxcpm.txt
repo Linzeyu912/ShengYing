@@ -1,0 +1,13 @@
+# VoxCPM2 运行环境（与 requirements.txt 的素材库服务相互独立）
+# 安装顺序与来源说明：
+# 1) torch 2.9.1+cu128 需从 PyTorch 官方源安装（RTX 50 系 Blackwell 架构必须 cu128+）：
+#    pip install torch==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+#    国内网络慢时可先 curl 断点续传 whl 到 packages/ 再本地安装（仓库内已留一份）
+# 2) torchaudio 必须同版本同源，否则与 torch 不匹配：
+#    pip install torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+# 3) 以下包走普通 PyPI（国内镜像即可）：
+voxcpm==2.0.3
+modelscope
+soundfile
+# 4) 模型权重（约 4.7GB，不入 git）：
+#    python -c "from modelscope import snapshot_download; snapshot_download('OpenBMB/VoxCPM2', local_dir='models/VoxCPM2')"

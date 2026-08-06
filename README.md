@@ -227,6 +227,8 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 
 当前进行中：音效库与环境音库素材收集；VoxCPM 源码已拉取至 `third_party/VoxCPM` 并完成[功能拆分](docs/voxcpm-功能拆分.md)，待讨论确定保留功能后进入 M3 适配。
 
+**VoxCPM2 本地环境已就绪**（2026-08-06）：torch 2.9.1+cu128 + voxcpm 2.0.3 + 权重 4.7GB（`models/VoxCPM2`），RTX 5070 Laptop GPU 实测 CUDA 可用；基础 TTS / 音色设计 / 可控克隆三种模式均已用音色库样本跑通（见 `scripts/test_voxcpm_clone.py`，环境搭建步骤见 `requirements-voxcpm.txt`）。
+
 欢迎围绕以下方向参与讨论：
 
 - 群像与声影之间的资产包标准

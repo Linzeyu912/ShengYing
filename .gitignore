@@ -7,6 +7,9 @@ assets/ambience/**/*.wav
 # 模型权重（如后续内置 VoxCPM）
 models/
 
+# 第三方源码（各自持有上游 git 仓库，本地研究用）
+third_party/
+
 # Python
 __pycache__/
 *.pyc

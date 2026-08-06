@@ -225,7 +225,7 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 # 浏览器打开 http://localhost:8317/ 进入素材浏览试听页
 ```
 
-当前进行中：音效库与环境音库素材收集；M3 前的 VoxCPM 验证准备。
+当前进行中：音效库与环境音库素材收集；VoxCPM 源码已拉取至 `third_party/VoxCPM` 并完成[功能拆分](docs/voxcpm-功能拆分.md)，待讨论确定保留功能后进入 M3 适配。
 
 欢迎围绕以下方向参与讨论：
 

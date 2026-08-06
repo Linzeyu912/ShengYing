@@ -6,8 +6,13 @@
 # 2) torchaudio 必须同版本同源，否则与 torch 不匹配：
 #    pip install torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu128
 # 3) 以下包走普通 PyPI（国内镜像即可）：
-voxcpm==2.0.3
 modelscope
 soundfile
-# 4) 模型权重（约 4.7GB，不入 git）：
+# 注意：voxcpm 不使用 PyPI 版本（2.0.3 偏旧，缺 seed 等参数），
+# 改为从本地源码安装（与 Web 界面 app.py 保持同版本）：
+#    pip install -e ./third_party/VoxCPM
+# 4) Web 界面依赖：
+gradio
+funasr
+# 5) 模型权重（约 4.7GB，不入 git）：
 #    python -c "from modelscope import snapshot_download; snapshot_download('OpenBMB/VoxCPM2', local_dir='models/VoxCPM2')"

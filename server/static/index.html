@@ -7,30 +7,67 @@
 <style>
   :root { --bg:#0f1115; --card:#1a1e27; --line:#2a3040; --fg:#e8eaf0; --dim:#9aa3b5; --accent:#5b8cff; }
   * { box-sizing: border-box; margin: 0; }
-  body { background: var(--bg); color: var(--fg); font-family: "Microsoft YaHei", system-ui, sans-serif; padding: 24px; }
+  body { background: var(--bg); color: var(--fg); font-family: "Microsoft YaHei", system-ui, sans-serif; padding: 24px; max-width: 1200px; margin: 0 auto; }
   h1 { font-size: 20px; margin-bottom: 4px; }
+  h3 { font-size: 15px; margin-bottom: 10px; }
   .sub { color: var(--dim); font-size: 13px; margin-bottom: 20px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
   .bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
-  .bar input, .bar select { background: var(--card); border: 1px solid var(--line); color: var(--fg);
+  .bar input, .bar select, .panel input, .panel select, .panel textarea {
+    background: #12151c; border: 1px solid var(--line); color: var(--fg);
     border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
   .bar input { width: 220px; }
+  .panel textarea { width: 100%; min-height: 64px; resize: vertical; margin-bottom: 10px; font-family: inherit; }
+  .panel .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: wait; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--fg); padding: 4px 10px; font-size: 12px; }
   .stats { color: var(--dim); font-size: 13px; margin-bottom: 16px; }
   .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
   .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
   .card h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
   .tag { font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 2px 8px; }
   .tag.warn { color: #f0b35b; border-color: #6b5326; }
+  .tag.gen { color: #7bd88f; border-color: #2f5c3a; }
   .desc { color: var(--dim); font-size: 12px; margin: 6px 0 12px; }
   .sample { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
   .sample .emo { width: 40px; font-size: 13px; flex: none; }
   .sample audio { flex: 1; height: 30px; min-width: 0; }
   .note { font-size: 11px; color: #f0b35b; }
   .empty { color: var(--dim); padding: 40px; text-align: center; }
+  .rec { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .rec .meta { width: 300px; flex: none; color: var(--dim); font-size: 12px; }
+  .rec .txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec audio { width: 220px; height: 30px; }
+  #genStatus { color: var(--dim); font-size: 13px; }
 </style>
 </head>
 <body>
-<h1>声影 · 音频素材库</h1>
-<div class="sub">人物音色 / 音效 / 环境音 · 本地素材服务</div>
+<h1>声影 · 音频工作台</h1>
+<div class="sub">VoxCPM2 内置合成 · 生成记录归档 · 音色固化 · 素材库</div>
+
+<div class="panel">
+  <h3>对白合成</h3>
+  <textarea id="ttsText" placeholder="输入台词；开头加 (音色描述) 即音色设计模式，例如：(年长男性，声音沙哑)这件事得从二十年前说起。"></textarea>
+  <div class="row">
+    <select id="ttsVoice"><option value="">不使用库内音色</option></select>
+    <select id="ttsEmotion"><option value="">参考样本情绪（默认首个）</option></select>
+    <input id="ttsSeed" type="number" placeholder="seed（留空随机）" style="width:150px">
+    <button id="ttsBtn" onclick="generate()">生成</button>
+    <span id="genStatus"></span>
+  </div>
+  <div class="row" id="ttsResult" style="margin-top:10px; display:none">
+    <audio id="ttsAudio" controls style="flex:1"></audio>
+    <span id="ttsMeta" class="stats" style="margin:0"></span>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>生成记录 <button class="ghost" onclick="loadHistory()">刷新</button></h3>
+  <div id="history"><div class="empty">暂无生成记录</div></div>
+</div>
+
 <div class="bar">
   <input id="q" type="search" placeholder="搜索音色名称或描述…">
   <select id="gender">
@@ -48,15 +85,25 @@
 const grid = document.getElementById('grid');
 const stats = document.getElementById('stats');
 const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
-let debounce;
+let debounce, voiceCache = [];
 
 async function boot() {
   const s = await (await fetch('/api/library/summary')).json();
   s.emotions.forEach(e => {
-    const o = document.createElement('option'); o.value = o.textContent = e;
-    els.emotion.appendChild(o);
+    for (const sel of [els.emotion, document.getElementById('ttsEmotion')]) {
+      const o = document.createElement('option'); o.value = o.textContent = e; sel.appendChild(o);
+    }
   });
-  load();
+  const voices = await (await fetch('/api/voices')).json();
+  voiceCache = voices.items;
+  const vs = document.getElementById('ttsVoice');
+  voices.items.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.voice_id;
+    o.textContent = v.name + (v.samples.length ? '' : '（固化音色）');
+    vs.appendChild(o);
+  });
+  load(); loadHistory();
 }
 
 async function load() {
@@ -72,7 +119,8 @@ async function load() {
     const card = document.createElement('div'); card.className = 'card';
     const genderText = { male: '男声', female: '女声', unknown: '待确认' }[v.gender] || v.gender;
     const warn = v.known_issues.length ? `<span class="tag warn">${v.known_issues.length} 条待复核</span>` : '';
-    card.innerHTML = `<h2>${v.name} <span class="tag">${genderText}</span> <span class="tag">${v.version}</span> ${warn}</h2>
+    const gen = v.samples.length ? '' : '<span class="tag gen">固化音色</span>';
+    card.innerHTML = `<h2>${v.name} <span class="tag">${genderText}</span> <span class="tag">${v.version}</span> ${gen} ${warn}</h2>
       <div class="desc">${v.description || ''} · ${v.voice_id}</div>`;
     for (const s of v.samples) {
       const row = document.createElement('div'); row.className = 'sample';
@@ -82,6 +130,67 @@ async function load() {
     }
     grid.appendChild(card);
   }
+}
+
+async function generate() {
+  const text = document.getElementById('ttsText').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('ttsBtn'), status = document.getElementById('genStatus');
+  btn.disabled = true;
+  status.textContent = '合成中（首次需加载模型约 15–30s）…';
+  const seedRaw = document.getElementById('ttsSeed').value;
+  try {
+    const r = await fetch('/api/tts/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text, voice_id: document.getElementById('ttsVoice').value,
+        emotion: document.getElementById('ttsEmotion').value,
+        seed: seedRaw === '' ? null : parseInt(seedRaw),
+      }),
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const rec = await r.json();
+    const box = document.getElementById('ttsResult');
+    box.style.display = 'flex';
+    document.getElementById('ttsAudio').src = `/api/tts/records/${rec.record_id}/audio`;
+    document.getElementById('ttsMeta').textContent =
+      `${rec.mode} · ${rec.duration_sec}s · seed=${rec.seed}`;
+    status.textContent = '完成';
+    loadHistory();
+  } catch (e) {
+    status.textContent = '失败：' + e.message;
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+async function loadHistory() {
+  const data = await (await fetch('/api/tts/records')).json();
+  const box = document.getElementById('history');
+  if (!data.items.length) { box.innerHTML = '<div class="empty">暂无生成记录</div>'; return; }
+  box.innerHTML = '';
+  for (const r of data.items) {
+    const row = document.createElement('div'); row.className = 'rec';
+    row.innerHTML = `<span class="meta">${r.created_at}<br>${r.mode} · seed=${r.seed} · ${r.duration_sec}s</span>
+      <span class="txt" title="${r.text}">${r.text}</span>
+      <audio controls preload="none" src="/api/tts/records/${r.record_id}/audio"></audio>`;
+    const btn = document.createElement('button');
+    btn.className = 'ghost'; btn.textContent = '固化为音色';
+    btn.onclick = () => promote(r.record_id);
+    row.appendChild(btn);
+    box.appendChild(row);
+  }
+}
+
+async function promote(rid) {
+  const name = prompt('输入固化后的音色名称（如：沙哑老者）：');
+  if (!name) return;
+  const r = await fetch(`/api/tts/records/${rid}/promote`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (r.ok) { alert('已固化入音色库'); location.reload(); }
+  else alert('失败：' + (await r.json()).detail);
 }
 
 for (const el of Object.values(els)) {

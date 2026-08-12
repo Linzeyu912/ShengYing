@@ -72,5 +72,96 @@ def refresh_library():
     return {"ok": True}
 
 
+# ---------------- TTS 合成与生成记录（M3） ----------------
+
+from pydantic import BaseModel
+
+from . import records, tts
+
+
+class GenerateRequest(BaseModel):
+    text: str
+    voice_id: str = ""          # 库内音色：clone 模式取参考样本；固化音色复现其参数
+    emotion: str = ""           # 指定用该情绪的样本作克隆参考
+    seed: int | None = None     # 不传则随机生成并记录在案
+    cfg_value: float = 2.0
+    inference_timesteps: int = 10
+
+
+def _resolve_reference(voice_id: str, emotion: str) -> tuple[str | None, dict | None]:
+    """从音色库解析克隆参考音频；固化音色返回其生成参数。"""
+    if not voice_id:
+        return None, None
+    voice = library.get_voice(voice_id)
+    if voice is None:
+        raise HTTPException(404, f"音色不存在: {voice_id}")
+    if not voice["samples"]:  # 固化音色：无样本，复现 generation_params
+        vdir = library.ASSETS_ROOT / "voices" / voice_id / "voice.json"
+        import json as _json
+        meta = _json.loads(vdir.read_text(encoding="utf-8"))
+        return None, meta.get("generation_params")
+    chosen = None
+    if emotion:
+        chosen = next((s for s in voice["samples"] if s["emotion"] == emotion), None)
+    if chosen is None:
+        chosen = voice["samples"][0]
+    path = library.ASSETS_ROOT / "voices" / voice_id / chosen["file"]
+    return str(path), None
+
+
+@app.post("/api/tts/generate")
+def tts_generate(req: GenerateRequest):
+    reference, gen_params = _resolve_reference(req.voice_id, req.emotion)
+    text = req.text
+    seed, cfg, steps = req.seed, req.cfg_value, req.inference_timesteps
+    if gen_params:  # 固化音色：复现描述前缀与参数（可被请求覆盖）
+        src_text = gen_params.get("text") or ""
+        if src_text.startswith("(") and ")" in src_text:
+            text = src_text[: src_text.index(")") + 1] + text
+        seed = seed if seed is not None else gen_params.get("seed")
+        cfg = gen_params.get("cfg_value", cfg)
+        steps = gen_params.get("inference_timesteps", steps)
+        reference = gen_params.get("reference_wav_path") or reference
+    try:
+        wav, sr, used_seed = tts.synthesize(
+            text=text, reference_wav_path=reference,
+            seed=seed, cfg_value=cfg, inference_timesteps=steps)
+    except Exception as e:
+        raise HTTPException(500, f"合成失败: {e}")
+    record = records.save_record(wav, sr, {
+        "text": req.text, "mode": tts.detect_mode(text, reference),
+        "voice_id": req.voice_id or None, "emotion": req.emotion or None,
+        "seed": used_seed, "cfg_value": cfg, "inference_timesteps": steps,
+        "reference_wav_path": reference,
+    })
+    return record
+
+
+@app.get("/api/tts/records")
+def tts_records():
+    return {"items": records.list_records()}
+
+
+@app.get("/api/tts/records/{rid}/audio")
+def tts_record_audio(rid: str):
+    path = records.resolve_audio(rid)
+    if path is None:
+        raise HTTPException(404, "记录不存在")
+    return FileResponse(path, media_type="audio/wav", filename=f"{rid}.wav")
+
+
+class PromoteRequest(BaseModel):
+    name: str
+    gender: str = "unknown"
+
+
+@app.post("/api/tts/records/{rid}/promote")
+def tts_promote(rid: str, req: PromoteRequest):
+    try:
+        return records.promote_to_voice(rid, req.name, req.gender)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
 # 浏览试听页（静态页，最后挂载，避免覆盖 /api 路由）
 app.mount("/", StaticFiles(directory="server/static", html=True), name="static")

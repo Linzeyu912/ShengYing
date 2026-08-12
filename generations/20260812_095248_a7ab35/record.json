@@ -1,0 +1,15 @@
+{
+  "record_id": "20260812_095248_a7ab35",
+  "created_at": "2026-08-12 09:52:48",
+  "sample_rate": 48000,
+  "duration_sec": 2.72,
+  "review_status": "pending",
+  "text": "今天的风，有些喧嚣啊。",
+  "mode": "basic",
+  "voice_id": null,
+  "emotion": null,
+  "seed": 727513922,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "reference_wav_path": null
+}

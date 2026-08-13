@@ -174,6 +174,7 @@ async function loadProjects() {
 async function loadEpisodes() {
   const pid = document.getElementById('projSelect').value;
   const sel = document.getElementById('epSelect');
+  const prev = sel.value;
   sel.innerHTML = '<option value="">选择剧集（批量生成归属）…</option>';
   epCache = []; curEpisode = ''; updateBatchEp();
   if (!pid) return;
@@ -184,6 +185,35 @@ async function loadEpisodes() {
     o.textContent = `第${e.number}集 · ${e.name}`;
     sel.appendChild(o);
   });
+  if (prev && epCache.some(e => e.episode_id === prev)) {
+    sel.value = prev; curEpisode = prev;
+  }
+  updateBatchEp();
+}
+
+function epOrderedScenes(all) {
+  const ep = epCache.find(e => e.episode_id === curEpisode);
+  const mine = all.filter(s => s.episode_id === curEpisode);
+  const ord = (ep && ep.scene_order) || [];
+  return [...mine].sort((a, b) => {
+    const ia = ord.indexOf(a.scene_id), ib = ord.indexOf(b.scene_id);
+    return (ia === -1 ? 9999 : ia) - (ib === -1 ? 9999 : ib) || a.scene_id.localeCompare(b.scene_id);
+  });
+}
+
+async function moveScene(sid, dir, ev) {
+  ev.stopPropagation();
+  const data = (await (await fetch('/api/dialogue/scenes')).json()).items;
+  const arr = epOrderedScenes(data);
+  const i = arr.findIndex(s => s.scene_id === sid);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  await fetch(`/api/episodes/${curEpisode}/scene_order`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scene_ids: arr.map(s => s.scene_id) }) });
+  await loadEpisodes();
+  loadScenes();
 }
 
 function updateBatchEp() {
@@ -381,11 +411,24 @@ async function loadScenes() {
   const box = document.getElementById('scenes');
   if (!data.length) { box.innerHTML = '<div class="empty">暂无场次</div>'; return; }
   box.innerHTML = '';
+  const ordMap = {};
+  if (curEpisode) epOrderedScenes(data).forEach((s, i) => ordMap[s.scene_id] = i + 1);
   for (const s of data) {
     const head = document.createElement('div');
     head.className = 'scene-head';
     const epTag = s.episode_name ? `【${s.episode_name}】` : '【未归属】';
-    head.textContent = `🎬 ${epTag}${s.name} · ${s.line_count} 行 · ${s.created_at}${s.has_mix ? ' · 已混音' : ''}${s.draft ? ' · 草稿' : ''}`;
+    head.textContent = `🎬 ${ordMap[s.scene_id] ? '#' + ordMap[s.scene_id] + ' ' : ''}${epTag}${s.name} · ${s.line_count} 行 · ${s.created_at}${s.has_mix ? ' · 已混音' : ''}${s.draft ? ' · 草稿' : ''}`;
+    if (ordMap[s.scene_id]) {
+      const mk = (label, dir) => {
+        const b = document.createElement('button');
+        b.className = 'ghost'; b.textContent = label;
+        b.style.cssText = 'margin-left:6px;padding:0 6px';
+        b.onclick = ev => moveScene(s.scene_id, dir, ev);
+        return b;
+      };
+      head.appendChild(mk('↑', -1));
+      head.appendChild(mk('↓', 1));
+    }
     if (!s.episode_id && epCache.length) {
       const assign = document.createElement('select');
       assign.style.cssText = 'margin-left:10px; font-size:12px; padding:2px 6px';
@@ -583,7 +626,7 @@ for (const el of Object.values(els)) {
   el.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(load, 250); });
 }
 document.getElementById('projSelect').addEventListener('change', loadEpisodes);
-document.getElementById('epSelect').addEventListener('change', e => { curEpisode = e.target.value; updateBatchEp(); });
+document.getElementById('epSelect').addEventListener('change', e => { curEpisode = e.target.value; updateBatchEp(); loadScenes(); });
 boot();
 </script>
 </body>

@@ -4,5 +4,6 @@
   "number": 1,
   "name": "巷口相遇",
   "description": "",
-  "created_at": "2026-08-13 09:49:15"
+  "created_at": "2026-08-13 09:49:15",
+  "scene_order": []
 }

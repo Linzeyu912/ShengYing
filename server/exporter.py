@@ -25,7 +25,10 @@ def export_episode(episode_id: str, scene_gap_ms: int = 1000,
     pid = ep["project_id"]
 
     scenes = [s for s in dialogue.list_scenes() if s.get("episode_id") == episode_id]
-    scenes.sort(key=lambda s: s["scene_id"])  # scene_id 含时间戳，即创作顺序
+    order = ep.get("scene_order") or []
+    # 优先按手动排序；未列入的场次按创作时间排在末尾
+    scenes.sort(key=lambda s: (order.index(s["scene_id"]) if s["scene_id"] in order else 9999,
+                               s["scene_id"]))
     if not scenes:
         raise ValueError("该剧集下没有场次")
 

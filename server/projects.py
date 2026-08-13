@@ -109,3 +109,17 @@ def delete_episode(eid: str) -> bool:
             shutil.rmtree(edir)
             return True
     return False
+
+
+def set_scene_order(eid: str, scene_ids: list[str]) -> dict:
+    """保存剧集内场次的播放/导出顺序。"""
+    if not PROJECTS_ROOT.exists():
+        raise ValueError(f"剧集不存在: {eid}")
+    for pdir in PROJECTS_ROOT.iterdir():
+        f = pdir / "episodes" / eid / "episode.json"
+        if f.exists():
+            ep = json.loads(f.read_text(encoding="utf-8"))
+            ep["scene_order"] = scene_ids
+            f.write_text(json.dumps(ep, ensure_ascii=False, indent=2), encoding="utf-8")
+            return ep
+    raise ValueError(f"剧集不存在: {eid}")

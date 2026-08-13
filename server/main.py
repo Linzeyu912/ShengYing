@@ -314,6 +314,22 @@ def export_audio(eid: str):
     return FileResponse(path, media_type="audio/wav", filename=f"{eid}_export.wav")
 
 
+class SceneOrderRequest(BaseModel):
+    scene_ids: list[str]
+
+
+@app.post("/api/episodes/{eid}/scene_order")
+def set_scene_order(eid: str, req: SceneOrderRequest):
+    ep = projects.get_episode(eid)
+    if ep is None:
+        raise HTTPException(404, f"剧集不存在: {eid}")
+    mine = {s["scene_id"] for s in dialogue.list_scenes() if s.get("episode_id") == eid}
+    bad = [sid for sid in req.scene_ids if sid not in mine]
+    if bad:
+        raise HTTPException(400, f"场次不属于该剧集: {bad}")
+    return projects.set_scene_order(eid, req.scene_ids)
+
+
 # ---------------- 资产包导入（群像对接） ----------------
 
 from . import importer

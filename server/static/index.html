@@ -67,6 +67,8 @@
     <input id="epNum" type="number" value="1" min="1" style="width:60px" title="集数">
     <input id="epName" placeholder="新剧集名" style="width:140px">
     <button class="ghost" onclick="createEp()">建剧集</button>
+    <span class="stats" style="margin:0">|</span>
+    <button class="ghost" onclick="importPackage()">📦 导入群像资产包</button>
   </div>
 </div>
 
@@ -201,6 +203,31 @@ async function createEp() {
   loadEpisodes(); loadProjects();
 }
 
+async function importPackage() {
+  const path = prompt('资产包目录路径：', 'examples/qunxiang_sample');
+  if (!path) return;
+  const pv = await fetch('/api/import/preview', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+  if (!pv.ok) { alert('预览失败：' + (await pv.json()).detail); return; }
+  const r = await pv.json();
+  const lines = [
+    `项目：${r.project_title}`,
+    `剧集：${r.episodes.map(e => `第${e.number}集 ${e.title}`).join('、')}`,
+    `角色：${r.characters.map(c => c.name).join('、')}`,
+    `台词：共 ${r.line_count} 行`,
+    ...r.characters.map(c => `· ${c.name} → ${c.voice_note}`),
+    ...(r.issues.length ? ['⚠ 异常：', ...r.issues] : []),
+    '', '确认导入？（只建骨架，音频在工作台逐场生成）',
+  ];
+  if (!confirm(lines.join('\n'))) return;
+  const ex = await fetch('/api/import/execute', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+  if (!ex.ok) { alert('导入失败：' + (await ex.json()).detail); return; }
+  const res = await ex.json();
+  alert(`导入完成：项目「${res.project_name}」\n新建场次 ${res.scenes_created.length} 个（草稿）`);
+  loadProjects(); loadChars(); loadScenes();
+}
+
 function fillVoiceSelect(sel, withEmpty) {
   sel.innerHTML = withEmpty ? '<option value="">不使用库内音色</option>' : '<option value="">绑定音色（必选）</option>';
   voiceCache.forEach(v => {
@@ -332,7 +359,7 @@ async function loadScenes() {
     const head = document.createElement('div');
     head.className = 'scene-head';
     const epTag = s.episode_name ? `【${s.episode_name}】` : '【未归属】';
-    head.textContent = `🎬 ${epTag}${s.name} · ${s.line_count} 行 · ${s.created_at}${s.has_mix ? ' · 已混音' : ''}`;
+    head.textContent = `🎬 ${epTag}${s.name} · ${s.line_count} 行 · ${s.created_at}${s.has_mix ? ' · 已混音' : ''}${s.draft ? ' · 草稿' : ''}`;
     if (!s.episode_id && epCache.length) {
       const assign = document.createElement('select');
       assign.style.cssText = 'margin-left:10px; font-size:12px; padding:2px 6px';
@@ -354,12 +381,31 @@ async function loadScenes() {
         const sc = await (await fetch('/api/dialogue/scenes/' + s.scene_id)).json();
         for (const l of sc.lines) {
           const row = document.createElement('div'); row.className = 'rec';
+          const audioHtml = l.record_id
+            ? `<audio controls preload="none" src="/api/tts/records/${l.record_id}/audio"></audio>`
+            : '<span class="tag warn">待生成</span>';
           row.innerHTML = `<span class="meta">${l.character_name}${l.emotion ? ' · ' + l.emotion : ''}</span>
-            <span class="txt">${l.text}</span>
-            <audio controls preload="none" src="/api/tts/records/${l.record_id}/audio"></audio>`;
+            <span class="txt">${l.text}</span>${audioHtml}`;
           detail.appendChild(row);
         }
-        detail.appendChild(buildMixPanel(s.scene_id, sc.mix));
+        if (sc.draft) {
+          const genRow = document.createElement('div'); genRow.className = 'row';
+          const genBtn = document.createElement('button');
+          genBtn.textContent = `生成全部台词（${sc.lines.filter(l => !l.record_id).length} 行）`;
+          genBtn.onclick = async () => {
+            genBtn.disabled = true; genBtn.textContent = '生成中…';
+            try {
+              const r = await fetch(`/api/dialogue/scenes/${s.scene_id}/generate`, { method: 'POST' });
+              if (!r.ok) throw new Error((await r.json()).detail || r.status);
+              detail.dataset.loaded = ''; detail.innerHTML = '';
+              head.onclick(); detail.classList.add('open'); loadScenes(); loadHistory();
+            } catch (e) { alert('失败：' + e.message); genBtn.disabled = false; genBtn.textContent = '重试生成'; }
+          };
+          genRow.appendChild(genBtn);
+          detail.appendChild(genRow);
+        } else {
+          detail.appendChild(buildMixPanel(s.scene_id, sc.mix));
+        }
         detail.dataset.loaded = '1';
       }
       detail.classList.toggle('open');

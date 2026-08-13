@@ -16,6 +16,40 @@ from . import characters, library, projects, records, tts
 SCENES_ROOT = Path(__file__).resolve().parent.parent / "scenes"
 
 
+def _synth_line(scene_id: str, idx: int, char: dict, text: str, emotion: str) -> dict:
+    """合成单行台词并归档生成记录，返回场次行数据。"""
+    reference, gen_params = library.resolve_voice_reference(
+        char.get("voice_id") or "", emotion)
+    seed, cfg, steps = None, 2.0, 10
+    if gen_params:  # 固化音色：复现描述前缀与参数
+        src = gen_params.get("text") or ""
+        if src.startswith("(") and ")" in src:
+            text = src[: src.index(")") + 1] + text
+        seed = gen_params.get("seed")
+        cfg = gen_params.get("cfg_value", cfg)
+        steps = gen_params.get("inference_timesteps", steps)
+        reference = gen_params.get("reference_wav_path") or reference
+    if not reference and not text.lstrip().startswith(("(", "（")):
+        raise ValueError(f"角色「{char['name']}」未绑定音色，无法合成")
+    wav, sr, used_seed = tts.synthesize(
+        text=text, reference_wav_path=reference,
+        seed=seed, cfg_value=cfg, inference_timesteps=steps)
+    record = records.save_record(wav, sr, {
+        "text": text if not gen_params else text[text.index(")") + 1:],
+        "mode": tts.detect_mode(text, reference),
+        "voice_id": char.get("voice_id") or None, "emotion": emotion or None,
+        "seed": used_seed, "cfg_value": cfg, "inference_timesteps": steps,
+        "reference_wav_path": reference,
+        "scene_id": scene_id, "character_id": char["char_id"], "line_index": idx,
+    })
+    return {
+        "index": idx, "character_id": char["char_id"], "character_name": char["name"],
+        "text": record["text"], "emotion": emotion or None,
+        "record_id": record["record_id"], "duration_sec": record["duration_sec"],
+        "seed": used_seed,
+    }
+
+
 def run_batch(scene_name: str, lines: list[dict], episode_id: str = "") -> dict:
     """按行批量合成对白。每行: {character_id, text, emotion?}
 
@@ -35,36 +69,7 @@ def run_batch(scene_name: str, lines: list[dict], episode_id: str = "") -> dict:
         if char is None:
             raise ValueError(f"第 {idx + 1} 行角色不存在: {line['character_id']}")
         emotion = line.get("emotion") or char.get("default_emotion") or ""
-        reference, gen_params = library.resolve_voice_reference(
-            char.get("voice_id") or "", emotion)
-
-        text = line["text"]
-        seed, cfg, steps = None, 2.0, 10
-        if gen_params:  # 固化音色：复现描述前缀与参数
-            src = gen_params.get("text") or ""
-            if src.startswith("(") and ")" in src:
-                text = src[: src.index(")") + 1] + text
-            seed = gen_params.get("seed")
-            cfg = gen_params.get("cfg_value", cfg)
-            steps = gen_params.get("inference_timesteps", steps)
-            reference = gen_params.get("reference_wav_path") or reference
-
-        wav, sr, used_seed = tts.synthesize(
-            text=text, reference_wav_path=reference,
-            seed=seed, cfg_value=cfg, inference_timesteps=steps)
-        record = records.save_record(wav, sr, {
-            "text": line["text"], "mode": tts.detect_mode(text, reference),
-            "voice_id": char.get("voice_id") or None, "emotion": emotion or None,
-            "seed": used_seed, "cfg_value": cfg, "inference_timesteps": steps,
-            "reference_wav_path": reference,
-            "scene_id": scene_id, "character_id": char["char_id"], "line_index": idx,
-        })
-        scene_lines.append({
-            "index": idx, "character_id": char["char_id"], "character_name": char["name"],
-            "text": line["text"], "emotion": emotion or None,
-            "record_id": record["record_id"], "duration_sec": record["duration_sec"],
-            "seed": used_seed,
-        })
+        scene_lines.append(_synth_line(scene_id, idx, char, line["text"], emotion))
     scene = {
         "scene_id": scene_id, "name": scene_name,
         "project_id": project_id or None, "episode_id": episode_id or None,
@@ -72,10 +77,52 @@ def run_batch(scene_name: str, lines: list[dict], episode_id: str = "") -> dict:
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "line_count": len(scene_lines), "lines": scene_lines,
     }
-    sdir = SCENES_ROOT / scene_id
+    _save_scene(scene)
+    return scene
+
+
+def _save_scene(scene: dict) -> None:
+    sdir = SCENES_ROOT / scene["scene_id"]
     sdir.mkdir(parents=True, exist_ok=True)
     (sdir / "scene.json").write_text(
         json.dumps(scene, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def write_skeleton(scene_name: str, episode_id: str, lines: list[dict],
+                   scene_card_ref: str = "") -> dict:
+    """写入场次草稿骨架（资产包导入用）：台词行不含音频，record_id 为 None。"""
+    project_id, ep_name = "", ""
+    ep = projects.get_episode(episode_id)
+    if ep:
+        project_id, ep_name = ep["project_id"], ep["name"]
+    scene = {
+        "scene_id": time.strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:4],
+        "name": scene_name, "draft": True,
+        "project_id": project_id or None, "episode_id": episode_id or None,
+        "episode_name": ep_name or None, "scene_card_ref": scene_card_ref or None,
+        "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
+        "line_count": len(lines), "lines": lines,
+    }
+    _save_scene(scene)
+    return scene
+
+
+def generate_scene_lines(scene_id: str) -> dict:
+    """为草稿场次的全部待生成行合成音频。"""
+    scene = get_scene(scene_id)
+    if scene is None:
+        raise ValueError(f"场次不存在: {scene_id}")
+    for line in scene["lines"]:
+        if line.get("record_id"):
+            continue
+        char = characters.get_character(line["character_id"])
+        if char is None:
+            raise ValueError(f"角色不存在: {line['character_id']}")
+        emotion = line.get("emotion") or char.get("default_emotion") or ""
+        done = _synth_line(scene_id, line["index"], char, line["text"], emotion)
+        line.update(done)
+    scene["draft"] = any(not l.get("record_id") for l in scene["lines"])
+    _save_scene(scene)
     return scene
 
 
@@ -108,7 +155,7 @@ def list_scenes() -> list[dict]:
                 "created_at": s["created_at"], "line_count": s["line_count"],
                 "project_id": s.get("project_id"), "episode_id": s.get("episode_id"),
                 "episode_name": s.get("episode_name"),
-                "has_mix": "mix" in s,
+                "has_mix": "mix" in s, "draft": s.get("draft", False),
             })
     return sorted(out, key=lambda s: s["scene_id"], reverse=True)
 

@@ -286,6 +286,45 @@ def assign_scene(scene_id: str, req: AssignRequest):
         raise HTTPException(400, str(e))
 
 
+# ---------------- 资产包导入（群像对接） ----------------
+
+from . import importer
+
+
+class ImportRequest(BaseModel):
+    path: str
+
+
+@app.post("/api/import/preview")
+def import_preview(req: ImportRequest):
+    try:
+        return importer.preview(req.path)
+    except importer.PackageError as e:
+        raise HTTPException(400, str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(404, f"资产包文件缺失: {e}")
+
+
+@app.post("/api/import/execute")
+def import_execute(req: ImportRequest):
+    try:
+        return importer.execute(req.path)
+    except importer.PackageError as e:
+        raise HTTPException(400, str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(404, f"资产包文件缺失: {e}")
+
+
+@app.post("/api/dialogue/scenes/{scene_id}/generate")
+def generate_draft_lines(scene_id: str):
+    try:
+        return dialogue.generate_scene_lines(scene_id)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"生成失败: {e}")
+
+
 # ---------------- 混音与素材导入（M4） ----------------
 
 from fastapi import UploadFile

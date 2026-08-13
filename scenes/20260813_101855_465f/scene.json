@@ -1,0 +1,73 @@
+{
+  "scene_id": "20260813_101855_465f",
+  "name": "第一场·屋檐下",
+  "draft": false,
+  "project_id": "p_14e4d080",
+  "episode_id": "e_3cfd88ea",
+  "episode_name": "巷口相遇",
+  "scene_card_ref": "scene_alley_night",
+  "created_at": "2026-08-13 10:18:55",
+  "line_count": 5,
+  "lines": [
+    {
+      "index": 0,
+      "character_id": "c_3d9cc358",
+      "character_name": "陈默",
+      "text": "雨下大了，进来躲躲吧。",
+      "emotion": "平静",
+      "record_id": "20260813_101931_9fda14",
+      "duration_sec": 2.24,
+      "seed": 138477573
+    },
+    {
+      "index": 1,
+      "character_id": "c_df4483fc",
+      "character_name": "小铃",
+      "text": "谢谢爷爷！您的雨衣都湿透了。",
+      "emotion": "开心",
+      "record_id": "20260813_101935_885ada",
+      "duration_sec": 3.2,
+      "seed": 1583451949
+    },
+    {
+      "index": 2,
+      "character_id": "c_3d9cc358",
+      "character_name": "陈默",
+      "text": "习惯了。二十年了，每年的今天都下雨。",
+      "emotion": "疲惫",
+      "record_id": "20260813_101941_907420",
+      "duration_sec": 4.48,
+      "seed": 1440391742
+    },
+    {
+      "index": 3,
+      "character_id": "c_df4483fc",
+      "character_name": "小铃",
+      "text": "爷爷，您在等人吗？",
+      "emotion": "惊讶",
+      "record_id": "20260813_101944_50adaa",
+      "duration_sec": 2.4,
+      "seed": 1815314305
+    },
+    {
+      "index": 4,
+      "character_id": "c_3d9cc358",
+      "character_name": "陈默",
+      "text": "……小孩子别问那么多。",
+      "emotion": "严肃",
+      "record_id": "20260813_101947_cb5d06",
+      "duration_sec": 1.92,
+      "seed": 1654416099
+    }
+  ],
+  "mix": {
+    "config": {
+      "gap_ms": 400,
+      "dialogue_volume": 1.0,
+      "ambience": null,
+      "sfx": []
+    },
+    "duration_sec": 15.84,
+    "rendered_at": "2026-08-13 10:19:49"
+  }
+}

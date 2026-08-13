@@ -1,0 +1,16 @@
+{
+  "episode_id": "e_3cfd88ea",
+  "episode_name": "巷口相遇",
+  "project_id": "p_14e4d080",
+  "exported_at": "2026-08-13 10:49:29",
+  "scene_gap_ms": 1000,
+  "total_duration_sec": 15.84,
+  "scenes": [
+    {
+      "scene_id": "20260813_101855_465f",
+      "name": "第一场·屋檐下",
+      "source": "mix",
+      "duration_sec": 15.84
+    }
+  ]
+}

@@ -69,6 +69,13 @@
     <button class="ghost" onclick="createEp()">建剧集</button>
     <span class="stats" style="margin:0">|</span>
     <button class="ghost" onclick="importPackage()">📦 导入群像资产包</button>
+    <span class="stats" style="margin:0">|</span>
+    <button id="exportBtn" class="ghost" onclick="exportEpisode()" disabled>🎧 导出整集</button>
+    <span id="exportStatus" class="stats" style="margin:0"></span>
+  </div>
+  <div class="row" id="exportPlayer" style="display:none; margin:0">
+    <audio id="exportAudio" controls style="flex:1; height:32px"></audio>
+    <a id="exportDownload" class="stats" href="#" download>下载 wav</a>
   </div>
 </div>
 
@@ -182,6 +189,25 @@ async function loadEpisodes() {
 function updateBatchEp() {
   const ep = epCache.find(e => e.episode_id === curEpisode);
   document.getElementById('batchEp').textContent = ep ? `（归属：第${ep.number}集 · ${ep.name}）` : '（未选择剧集，场次将不归属）';
+  document.getElementById('exportBtn').disabled = !curEpisode;
+}
+
+async function exportEpisode() {
+  if (!curEpisode) return;
+  const btn = document.getElementById('exportBtn'), st = document.getElementById('exportStatus');
+  btn.disabled = true; st.textContent = '导出中（未混音的场次会自动补渲染）…';
+  try {
+    const r = await fetch(`/api/episodes/${curEpisode}/export`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scene_gap_ms: 1000 }) });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const m = await r.json();
+    st.textContent = `完成 · ${m.scenes.length} 场 · 共 ${m.total_duration_sec}s`;
+    const url = `/api/episodes/${curEpisode}/export/audio?t=${Date.now()}`;
+    document.getElementById('exportAudio').src = url;
+    document.getElementById('exportDownload').href = url;
+    document.getElementById('exportPlayer').style.display = 'flex';
+  } catch (e) { st.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
 }
 
 async function createProj() {

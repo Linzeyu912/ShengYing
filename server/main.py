@@ -286,6 +286,34 @@ def assign_scene(scene_id: str, req: AssignRequest):
         raise HTTPException(400, str(e))
 
 
+# ---------------- 整集导出 ----------------
+
+from . import exporter
+
+
+class ExportRequest(BaseModel):
+    scene_gap_ms: int = 1000
+    auto_render: bool = True
+
+
+@app.post("/api/episodes/{eid}/export")
+def export_ep(eid: str, req: ExportRequest):
+    try:
+        return exporter.export_episode(eid, req.scene_gap_ms, req.auto_render)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"导出失败: {e}")
+
+
+@app.get("/api/episodes/{eid}/export/audio")
+def export_audio(eid: str):
+    path = exporter.resolve_export(eid)
+    if path is None:
+        raise HTTPException(404, "整集尚未导出")
+    return FileResponse(path, media_type="audio/wav", filename=f"{eid}_export.wav")
+
+
 # ---------------- 资产包导入（群像对接） ----------------
 
 from . import importer

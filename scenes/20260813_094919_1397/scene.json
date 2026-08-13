@@ -27,5 +27,15 @@
       "duration_sec": 1.76,
       "seed": 1074798442
     }
-  ]
+  ],
+  "mix": {
+    "config": {
+      "gap_ms": 500,
+      "dialogue_volume": 1.0,
+      "ambience": null,
+      "sfx": []
+    },
+    "duration_sec": 4.66,
+    "rendered_at": "2026-08-13 10:49:25"
+  }
 }

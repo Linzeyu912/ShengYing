@@ -23,6 +23,9 @@ generations/*/audio.wav
 scenes/*/mix.wav
 scenes/*/dialogue.wav
 
+# 整集导出音频：不入 git，导出清单（export.json）保留
+projects/**/*.wav
+
 # Python
 __pycache__/
 *.pyc

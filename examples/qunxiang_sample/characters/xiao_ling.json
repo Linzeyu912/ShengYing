@@ -1,0 +1,15 @@
+{
+  "id": "char_xiao_ling",
+  "name": "小铃",
+  "gender": "female",
+  "age": "童年",
+  "personality": ["活泼", "好奇", "嘴甜"],
+  "appearance": "扎双马尾，总抱着一个旧布偶",
+  "voice_hint": {
+    "description": "清脆年幼的女童声，语速偏快",
+    "reference_style": "萝莉音",
+    "gender": "female",
+    "age_group": "child"
+  },
+  "notes": "线索人物，无意间说出关键信息"
+}

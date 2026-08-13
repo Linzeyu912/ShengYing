@@ -56,7 +56,7 @@ def _scan_simple(kind: str) -> list[dict]:
     for f in sorted(root.rglob("*.wav")):
         rel = f.relative_to(root)
         items.append({
-            "id": str(rel.with_suffix("")),
+            "id": rel.with_suffix("").as_posix(),
             "name": f.stem,
             "category": rel.parts[0] if len(rel.parts) > 1 else "未分类",
             "url": f"/api/assets/{kind}/audio/{rel.as_posix()}",

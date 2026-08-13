@@ -218,5 +218,66 @@ def tts_promote(rid: str, req: PromoteRequest):
         raise HTTPException(400, str(e))
 
 
+# ---------------- 混音与素材导入（M4） ----------------
+
+from fastapi import UploadFile
+
+from . import mixer
+
+
+class SfxCue(BaseModel):
+    id: str
+    at_line: int = 0
+    volume: float = 0.8
+
+
+class MixRequest(BaseModel):
+    gap_ms: int = 500
+    dialogue_volume: float = 1.0
+    ambience: dict | None = None       # {id, volume}
+    sfx: list[SfxCue] = []
+
+
+@app.post("/api/dialogue/scenes/{scene_id}/mix")
+def render_mix(scene_id: str, req: MixRequest):
+    try:
+        return mixer.render_scene_mix(scene_id, req.model_dump())
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+@app.get("/api/dialogue/scenes/{scene_id}/mix/audio/{track}")
+def mix_audio(scene_id: str, track: str):
+    if track not in ("mix", "dialogue"):
+        raise HTTPException(404, "track 仅支持 mix / dialogue")
+    base = dialogue.SCENES_ROOT.resolve()
+    path = (base / scene_id / f"{track}.wav").resolve()
+    if not path.is_file() or path.parent.parent != base:
+        raise HTTPException(404, "混音尚未渲染，请先调用 mix 接口")
+    return FileResponse(path, media_type="audio/wav", filename=f"{scene_id}_{track}.wav")
+
+
+@app.post("/api/assets/{kind}/upload")
+async def upload_asset(kind: str, file: UploadFile, category: str = "未分类"):
+    """上传 wav 到音效库 / 环境音库。"""
+    if kind not in ("sfx", "ambience"):
+        raise HTTPException(404, "素材类型仅支持 sfx / ambience")
+    if not file.filename.lower().endswith(".wav"):
+        raise HTTPException(400, "仅支持 .wav 文件")
+    data = await file.read()
+    if len(data) > 100 * 1024 * 1024:
+        raise HTTPException(400, "文件超过 100MB")
+    safe_name = "".join(c for c in file.filename if c not in '\\/:*?"<>|')
+    safe_cat = "".join(c for c in category if c not in '\\/:*?"<>|') or "未分类"
+    dest_dir = library.ASSETS_ROOT / kind / safe_cat
+    dest_dir.mkdir(parents=True, exist_ok=True)
+    dest = dest_dir / safe_name
+    if dest.exists():
+        raise HTTPException(409, f"同名素材已存在: {safe_cat}/{safe_name}")
+    dest.write_bytes(data)
+    library.get_library(force=True)
+    return {"ok": True, "path": f"{kind}/{safe_cat}/{safe_name}", "size_bytes": len(data)}
+
+
 # 浏览试听页（静态页，最后挂载，避免覆盖 /api 路由）
 app.mount("/", StaticFiles(directory="server/static", html=True), name="static")

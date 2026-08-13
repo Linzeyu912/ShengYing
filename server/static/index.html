@@ -114,6 +114,13 @@
     <option value="unknown">待确认</option>
   </select>
   <select id="emotion"><option value="">全部情绪</option></select>
+  <span style="flex:1"></span>
+  <input id="sfxCat" placeholder="音效分类" style="width:90px">
+  <input id="sfxUpload" type="file" accept=".wav" style="width:180px">
+  <button class="ghost" onclick="uploadAsset('sfx')">导入音效</button>
+  <input id="ambienceCat" placeholder="环境音分类" style="width:90px">
+  <input id="ambienceUpload" type="file" accept=".wav" style="width:180px">
+  <button class="ghost" onclick="uploadAsset('ambience')">导入环境音</button>
 </div>
 <div class="stats" id="stats"></div>
 <div class="grid" id="grid"></div>
@@ -122,7 +129,7 @@
 const grid = document.getElementById('grid');
 const stats = document.getElementById('stats');
 const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
-let debounce, voiceCache = [], charCache = [], emotionList = [];
+let debounce, voiceCache = [], charCache = [], emotionList = [], ambCache = [], sfxCache = [];
 
 function fillVoiceSelect(sel, withEmpty) {
   sel.innerHTML = withEmpty ? '<option value="">不使用库内音色</option>' : '<option value="">绑定音色（必选）</option>';
@@ -147,9 +154,26 @@ async function boot() {
   voiceCache = (await (await fetch('/api/voices')).json()).items;
   fillVoiceSelect(document.getElementById('ttsVoice'), true);
   fillVoiceSelect(document.getElementById('charVoice'), false);
+  ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
+  sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
   await loadChars();
   addLine();
   load(); loadHistory(); loadScenes();
+}
+
+async function uploadAsset(kind) {
+  const input = document.getElementById(kind + 'Upload');
+  if (!input.files.length) { alert('请先选择 wav 文件'); return; }
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  const cat = document.getElementById(kind + 'Cat').value.trim() || '未分类';
+  const r = await fetch(`/api/assets/${kind}/upload?category=${encodeURIComponent(cat)}`, { method: 'POST', body: fd });
+  if (r.ok) {
+    ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
+    sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
+    alert('导入成功');
+    input.value = ''; load();
+  } else alert('失败：' + (await r.json()).detail);
 }
 
 // ---------- 角色管理 ----------
@@ -249,12 +273,67 @@ async function loadScenes() {
             <audio controls preload="none" src="/api/tts/records/${l.record_id}/audio"></audio>`;
           detail.appendChild(row);
         }
+        detail.appendChild(buildMixPanel(s.scene_id, sc.mix));
         detail.dataset.loaded = '1';
       }
       detail.classList.toggle('open');
     };
     box.append(head, detail);
   }
+}
+
+// ---------- 混音面板 ----------
+function buildMixPanel(sceneId, existingMix) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'border-top:1px solid var(--line); margin-top:8px; padding-top:10px';
+  const ambOpts = ['<option value="">无环境音</option>']
+    .concat(ambCache.map(a => `<option value="${a.id}">${a.category}/${a.name}</option>`)).join('');
+  const sfxOpts = ['<option value="">不加音效</option>']
+    .concat(sfxCache.map(x => `<option value="${x.id}">${x.category}/${x.name}</option>`)).join('');
+  wrap.innerHTML = `<div class="row">
+      <span class="stats" style="margin:0">行间隔</span>
+      <input class="mix-gap" type="number" value="${existingMix ? existingMix.config.gap_ms : 500}" style="width:80px">
+      <span class="stats" style="margin:0">ms</span>
+      <select class="mix-amb">${ambOpts}</select>
+      <span class="stats" style="margin:0">环境音量</span>
+      <input class="mix-ambvol" type="number" step="0.1" min="0" max="1" value="${existingMix && existingMix.config.ambience ? existingMix.config.ambience.volume : 0.4}" style="width:70px">
+      <select class="mix-sfx">${sfxOpts}</select>
+      <span class="stats" style="margin:0">在第</span>
+      <input class="mix-sfxline" type="number" value="1" min="1" style="width:56px">
+      <span class="stats" style="margin:0">行</span>
+      <button class="ghost mix-btn">生成混音</button>
+      <span class="stats mix-status" style="margin:0"></span>
+    </div>
+    <div class="row mix-players" style="display:${existingMix ? 'flex' : 'none'}">
+      <span class="stats" style="margin:0">混音</span>
+      <audio controls preload="none" src="/api/dialogue/scenes/${sceneId}/mix/audio/mix" style="flex:1; height:30px"></audio>
+      <span class="stats" style="margin:0">纯对白</span>
+      <audio controls preload="none" src="/api/dialogue/scenes/${sceneId}/mix/audio/dialogue" style="flex:1; height:30px"></audio>
+    </div>`;
+  wrap.querySelector('.mix-btn').onclick = async () => {
+    const btn = wrap.querySelector('.mix-btn'), st = wrap.querySelector('.mix-status');
+    btn.disabled = true; st.textContent = '渲染中…';
+    const ambId = wrap.querySelector('.mix-amb').value;
+    const sfxId = wrap.querySelector('.mix-sfx').value;
+    try {
+      const r = await fetch(`/api/dialogue/scenes/${sceneId}/mix`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gap_ms: parseInt(wrap.querySelector('.mix-gap').value) || 500,
+          ambience: ambId ? { id: ambId, volume: parseFloat(wrap.querySelector('.mix-ambvol').value) || 0.4 } : null,
+          sfx: sfxId ? [{ id: sfxId, at_line: (parseInt(wrap.querySelector('.mix-sfxline').value) || 1) - 1, volume: 0.8 }] : [],
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      const mix = await r.json();
+      st.textContent = `完成 · ${mix.duration_sec}s`;
+      const players = wrap.querySelector('.mix-players');
+      players.style.display = 'flex';
+      players.querySelectorAll('audio').forEach(a => { const src = a.src.split('?')[0]; a.src = src + '?t=' + Date.now(); a.load(); });
+    } catch (e) { st.textContent = '失败：' + e.message; }
+    finally { btn.disabled = false; }
+  };
+  return wrap;
 }
 
 // ---------- 素材库 ----------

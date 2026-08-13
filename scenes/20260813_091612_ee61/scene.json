@@ -34,5 +34,18 @@
       "duration_sec": 1.6,
       "seed": 484969000
     }
-  ]
+  ],
+  "mix": {
+    "config": {
+      "gap_ms": 600,
+      "dialogue_volume": 1.0,
+      "ambience": {
+        "id": "天气/雨声_测试占位",
+        "volume": 0.3
+      },
+      "sfx": []
+    },
+    "duration_sec": 9.04,
+    "rendered_at": "2026-08-13 09:32:45"
+  }
 }

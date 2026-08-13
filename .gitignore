@@ -19,6 +19,10 @@ outputs/
 # 生成记录：音频不入 git，元数据 record.json 保留追溯
 generations/*/audio.wav
 
+# 场次混音产物：音频不入 git，混音配置（scene.json）保留
+scenes/*/mix.wav
+scenes/*/dialogue.wav
+
 # Python
 __pycache__/
 *.pyc

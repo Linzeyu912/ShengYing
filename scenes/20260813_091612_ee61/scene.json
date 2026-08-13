@@ -1,0 +1,38 @@
+{
+  "scene_id": "20260813_091612_ee61",
+  "name": "测试场·巷口相遇",
+  "created_at": "2026-08-13 09:17:38",
+  "line_count": 3,
+  "lines": [
+    {
+      "index": 0,
+      "character_id": "c_e8e0d7ef",
+      "character_name": "小铃",
+      "text": "爷爷，您怎么一个人站在这里呀？",
+      "emotion": "开心",
+      "record_id": "20260813_091733_6467dc",
+      "duration_sec": 3.52,
+      "seed": 1986926535
+    },
+    {
+      "index": 1,
+      "character_id": "c_56ea2cb8",
+      "character_name": "老陈",
+      "text": "我在等一个老朋友，等了很多年了。",
+      "emotion": "平静",
+      "record_id": "20260813_091736_1d5945",
+      "duration_sec": 2.72,
+      "seed": 1141448086
+    },
+    {
+      "index": 2,
+      "character_id": "c_e8e0d7ef",
+      "character_name": "小铃",
+      "text": "那您等到他了吗？",
+      "emotion": "悲伤",
+      "record_id": "20260813_091738_1b9b51",
+      "duration_sec": 1.6,
+      "seed": 484969000
+    }
+  ]
+}

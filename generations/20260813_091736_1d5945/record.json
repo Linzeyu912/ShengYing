@@ -1,0 +1,18 @@
+{
+  "record_id": "20260813_091736_1d5945",
+  "created_at": "2026-08-13 09:17:36",
+  "sample_rate": 48000,
+  "duration_sec": 2.72,
+  "review_status": "pending",
+  "text": "我在等一个老朋友，等了很多年了。",
+  "mode": "clone",
+  "voice_id": "v_gen_09530532b5bf",
+  "emotion": "平静",
+  "seed": 1141448086,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "reference_wav_path": "D:\\YH\\ShengYing\\assets\\voices\\v_low_male\\samples\\03_愤怒.wav",
+  "scene_id": "20260813_091612_ee61",
+  "character_id": "c_56ea2cb8",
+  "line_index": 1
+}

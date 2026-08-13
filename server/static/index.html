@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>声影 · 素材库</title>
+<title>声影 · 音频工作台</title>
 <style>
   :root { --bg:#0f1115; --card:#1a1e27; --line:#2a3040; --fg:#e8eaf0; --dim:#9aa3b5; --accent:#5b8cff; }
   * { box-sizing: border-box; margin: 0; }
@@ -18,7 +18,7 @@
     border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
   .bar input { width: 220px; }
   .panel textarea { width: 100%; min-height: 64px; resize: vertical; margin-bottom: 10px; font-family: inherit; }
-  .panel .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .panel .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
   button { background: var(--accent); color: #fff; border: none; border-radius: 8px;
     padding: 8px 18px; font-size: 14px; cursor: pointer; }
   button:disabled { opacity: .5; cursor: wait; }
@@ -35,21 +35,58 @@
   .sample .emo { width: 40px; font-size: 13px; flex: none; }
   .sample audio { flex: 1; height: 30px; min-width: 0; }
   .note { font-size: 11px; color: #f0b35b; }
-  .empty { color: var(--dim); padding: 40px; text-align: center; }
+  .empty { color: var(--dim); padding: 24px; text-align: center; }
   .rec { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
   .rec .meta { width: 300px; flex: none; color: var(--dim); font-size: 12px; }
   .rec .txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rec audio { width: 220px; height: 30px; }
-  #genStatus { color: var(--dim); font-size: 13px; }
+  #genStatus, #batchStatus { color: var(--dim); font-size: 13px; }
+  .line-row select.char { width: 130px; }
+  .line-row select.emo { width: 90px; }
+  .line-row input.txt { flex: 1; min-width: 200px; }
+  .scene-head { cursor: pointer; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .scene-head:hover { color: var(--accent); }
+  .scene-lines { display: none; padding-left: 12px; }
+  .scene-lines.open { display: block; }
+  .char-card { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; flex-wrap: wrap; }
+  .char-card .name { width: 110px; font-weight: bold; }
 </style>
 </head>
 <body>
 <h1>声影 · 音频工作台</h1>
-<div class="sub">VoxCPM2 内置合成 · 生成记录归档 · 音色固化 · 素材库</div>
+<div class="sub">角色对白 · VoxCPM2 内置合成 · 生成记录归档 · 音色固化 · 素材库</div>
 
 <div class="panel">
-  <h3>对白合成</h3>
-  <textarea id="ttsText" placeholder="输入台词；开头加 (音色描述) 即音色设计模式，例如：(年长男性，声音沙哑)这件事得从二十年前说起。"></textarea>
+  <h3>场次对白批量生成</h3>
+  <div class="row">
+    <input id="sceneName" placeholder="场次名称，如：第一集·雨夜对峙" style="flex:1; min-width:220px">
+    <button class="ghost" onclick="addLine()">+ 加一行台词</button>
+    <button id="batchBtn" onclick="runBatch()">批量生成</button>
+    <span id="batchStatus"></span>
+  </div>
+  <div id="lineRows"></div>
+</div>
+
+<div class="panel">
+  <h3>场次回放 <button class="ghost" onclick="loadScenes()">刷新</button></h3>
+  <div id="scenes"><div class="empty">暂无场次</div></div>
+</div>
+
+<div class="panel">
+  <h3>角色管理</h3>
+  <div class="row">
+    <input id="charName" placeholder="角色名" style="width:130px">
+    <select id="charVoice"><option value="">绑定音色（必选）</option></select>
+    <select id="charEmotion"><option value="">默认情绪</option></select>
+    <input id="charDesc" placeholder="角色简介（可空）" style="flex:1; min-width:160px">
+    <button class="ghost" onclick="createChar()">创建角色</button>
+  </div>
+  <div id="charList"><div class="empty">暂无角色</div></div>
+</div>
+
+<div class="panel">
+  <h3>单句合成（调试用）</h3>
+  <textarea id="ttsText" placeholder="输入台词；开头加 (音色描述) 即音色设计模式"></textarea>
   <div class="row">
     <select id="ttsVoice"><option value="">不使用库内音色</option></select>
     <select id="ttsEmotion"><option value="">参考样本情绪（默认首个）</option></select>
@@ -85,27 +122,142 @@
 const grid = document.getElementById('grid');
 const stats = document.getElementById('stats');
 const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
-let debounce, voiceCache = [];
+let debounce, voiceCache = [], charCache = [], emotionList = [];
 
-async function boot() {
-  const s = await (await fetch('/api/library/summary')).json();
-  s.emotions.forEach(e => {
-    for (const sel of [els.emotion, document.getElementById('ttsEmotion')]) {
-      const o = document.createElement('option'); o.value = o.textContent = e; sel.appendChild(o);
-    }
-  });
-  const voices = await (await fetch('/api/voices')).json();
-  voiceCache = voices.items;
-  const vs = document.getElementById('ttsVoice');
-  voices.items.forEach(v => {
+function fillVoiceSelect(sel, withEmpty) {
+  sel.innerHTML = withEmpty ? '<option value="">不使用库内音色</option>' : '<option value="">绑定音色（必选）</option>';
+  voiceCache.forEach(v => {
     const o = document.createElement('option');
     o.value = v.voice_id;
     o.textContent = v.name + (v.samples.length ? '' : '（固化音色）');
-    vs.appendChild(o);
+    sel.appendChild(o);
   });
-  load(); loadHistory();
+}
+function fillEmotionSelect(sel, label) {
+  sel.innerHTML = `<option value="">${label}</option>`;
+  emotionList.forEach(e => { const o = document.createElement('option'); o.value = o.textContent = e; sel.appendChild(o); });
 }
 
+async function boot() {
+  const s = await (await fetch('/api/library/summary')).json();
+  emotionList = s.emotions;
+  fillEmotionSelect(els.emotion, '全部情绪');
+  fillEmotionSelect(document.getElementById('ttsEmotion'), '参考样本情绪（默认首个）');
+  fillEmotionSelect(document.getElementById('charEmotion'), '默认情绪');
+  voiceCache = (await (await fetch('/api/voices')).json()).items;
+  fillVoiceSelect(document.getElementById('ttsVoice'), true);
+  fillVoiceSelect(document.getElementById('charVoice'), false);
+  await loadChars();
+  addLine();
+  load(); loadHistory(); loadScenes();
+}
+
+// ---------- 角色管理 ----------
+async function loadChars() {
+  charCache = (await (await fetch('/api/characters')).json()).items;
+  const box = document.getElementById('charList');
+  if (!charCache.length) { box.innerHTML = '<div class="empty">暂无角色</div>'; return; }
+  box.innerHTML = '';
+  for (const c of charCache) {
+    const v = voiceCache.find(x => x.voice_id === c.voice_id);
+    const row = document.createElement('div'); row.className = 'char-card';
+    row.innerHTML = `<span class="name">${c.name}</span>
+      <span class="tag">${v ? v.name : '未绑定音色'}</span>
+      ${c.default_emotion ? `<span class="tag">默认:${c.default_emotion}</span>` : ''}
+      <span class="desc" style="margin:0">${c.description || ''}</span>`;
+    const del = document.createElement('button');
+    del.className = 'ghost'; del.textContent = '删除';
+    del.onclick = async () => { if (confirm(`删除角色 ${c.name}？`)) { await fetch('/api/characters/' + c.char_id, { method: 'DELETE' }); loadChars(); } };
+    row.appendChild(del);
+    box.appendChild(row);
+  }
+}
+
+async function createChar() {
+  const name = document.getElementById('charName').value.trim();
+  const voice_id = document.getElementById('charVoice').value;
+  if (!name || !voice_id) { alert('角色名和绑定音色必填'); return; }
+  const r = await fetch('/api/characters', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, voice_id,
+      default_emotion: document.getElementById('charEmotion').value,
+      description: document.getElementById('charDesc').value }),
+  });
+  if (r.ok) { document.getElementById('charName').value = ''; document.getElementById('charDesc').value = ''; loadChars(); }
+  else alert('失败：' + (await r.json()).detail);
+}
+
+// ---------- 场次批量生成 ----------
+function addLine() {
+  const box = document.getElementById('lineRows');
+  const row = document.createElement('div');
+  row.className = 'row line-row';
+  const cs = document.createElement('select'); cs.className = 'char';
+  cs.innerHTML = '<option value="">选择角色</option>';
+  charCache.forEach(c => { const o = document.createElement('option'); o.value = c.char_id; o.textContent = c.name; cs.appendChild(o); });
+  const es = document.createElement('select'); es.className = 'emo';
+  fillEmotionSelect(es, '情绪');
+  const txt = document.createElement('input'); txt.className = 'txt'; txt.placeholder = '台词…';
+  const del = document.createElement('button'); del.className = 'ghost'; del.textContent = '×';
+  del.onclick = () => row.remove();
+  row.append(cs, es, txt, del);
+  box.appendChild(row);
+}
+
+async function runBatch() {
+  const scene_name = document.getElementById('sceneName').value.trim() || '未命名场次';
+  const lines = [...document.querySelectorAll('#lineRows .line-row')].map(r => ({
+    character_id: r.querySelector('.char').value,
+    emotion: r.querySelector('.emo').value,
+    text: r.querySelector('.txt').value.trim(),
+  })).filter(l => l.character_id && l.text);
+  if (!lines.length) { alert('请至少填写一行完整的台词（角色 + 文本）'); return; }
+  const btn = document.getElementById('batchBtn'), st = document.getElementById('batchStatus');
+  btn.disabled = true;
+  st.textContent = `合成中（${lines.length} 行，每行约 10–40 秒，请勿关闭页面）…`;
+  try {
+    const r = await fetch('/api/dialogue/batch', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene_name, lines }),
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const scene = await r.json();
+    st.textContent = `完成：${scene.line_count} 行已生成`;
+    loadScenes(); loadHistory();
+  } catch (e) { st.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function loadScenes() {
+  const data = (await (await fetch('/api/dialogue/scenes')).json()).items;
+  const box = document.getElementById('scenes');
+  if (!data.length) { box.innerHTML = '<div class="empty">暂无场次</div>'; return; }
+  box.innerHTML = '';
+  for (const s of data) {
+    const head = document.createElement('div');
+    head.className = 'scene-head';
+    head.textContent = `🎬 ${s.name} · ${s.line_count} 行 · ${s.created_at}`;
+    const detail = document.createElement('div');
+    detail.className = 'scene-lines';
+    head.onclick = async () => {
+      if (!detail.dataset.loaded) {
+        const sc = await (await fetch('/api/dialogue/scenes/' + s.scene_id)).json();
+        for (const l of sc.lines) {
+          const row = document.createElement('div'); row.className = 'rec';
+          row.innerHTML = `<span class="meta">${l.character_name}${l.emotion ? ' · ' + l.emotion : ''}</span>
+            <span class="txt">${l.text}</span>
+            <audio controls preload="none" src="/api/tts/records/${l.record_id}/audio"></audio>`;
+          detail.appendChild(row);
+        }
+        detail.dataset.loaded = '1';
+      }
+      detail.classList.toggle('open');
+    };
+    box.append(head, detail);
+  }
+}
+
+// ---------- 素材库 ----------
 async function load() {
   const p = new URLSearchParams({ q: els.q.value, gender: els.gender.value, emotion: els.emotion.value });
   const [summary, data] = await Promise.all([
@@ -132,6 +284,7 @@ async function load() {
   }
 }
 
+// ---------- 单句合成与生成记录 ----------
 async function generate() {
   const text = document.getElementById('ttsText').value.trim();
   if (!text) return;
@@ -153,15 +306,11 @@ async function generate() {
     const box = document.getElementById('ttsResult');
     box.style.display = 'flex';
     document.getElementById('ttsAudio').src = `/api/tts/records/${rec.record_id}/audio`;
-    document.getElementById('ttsMeta').textContent =
-      `${rec.mode} · ${rec.duration_sec}s · seed=${rec.seed}`;
+    document.getElementById('ttsMeta').textContent = `${rec.mode} · ${rec.duration_sec}s · seed=${rec.seed}`;
     status.textContent = '完成';
     loadHistory();
-  } catch (e) {
-    status.textContent = '失败：' + e.message;
-  } finally {
-    btn.disabled = false;
-  }
+  } catch (e) { status.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
 }
 
 async function loadHistory() {
@@ -169,7 +318,7 @@ async function loadHistory() {
   const box = document.getElementById('history');
   if (!data.items.length) { box.innerHTML = '<div class="empty">暂无生成记录</div>'; return; }
   box.innerHTML = '';
-  for (const r of data.items) {
+  for (const r of data.items.slice(0, 20)) {
     const row = document.createElement('div'); row.className = 'rec';
     row.innerHTML = `<span class="meta">${r.created_at}<br>${r.mode} · seed=${r.seed} · ${r.duration_sec}s</span>
       <span class="txt" title="${r.text}">${r.text}</span>

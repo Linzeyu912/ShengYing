@@ -76,7 +76,7 @@ def refresh_library():
 
 from pydantic import BaseModel
 
-from . import records, tts
+from . import characters, dialogue, records, tts
 
 
 class GenerateRequest(BaseModel):
@@ -88,30 +88,11 @@ class GenerateRequest(BaseModel):
     inference_timesteps: int = 10
 
 
-def _resolve_reference(voice_id: str, emotion: str) -> tuple[str | None, dict | None]:
-    """从音色库解析克隆参考音频；固化音色返回其生成参数。"""
-    if not voice_id:
-        return None, None
-    voice = library.get_voice(voice_id)
-    if voice is None:
-        raise HTTPException(404, f"音色不存在: {voice_id}")
-    if not voice["samples"]:  # 固化音色：无样本，复现 generation_params
-        vdir = library.ASSETS_ROOT / "voices" / voice_id / "voice.json"
-        import json as _json
-        meta = _json.loads(vdir.read_text(encoding="utf-8"))
-        return None, meta.get("generation_params")
-    chosen = None
-    if emotion:
-        chosen = next((s for s in voice["samples"] if s["emotion"] == emotion), None)
-    if chosen is None:
-        chosen = voice["samples"][0]
-    path = library.ASSETS_ROOT / "voices" / voice_id / chosen["file"]
-    return str(path), None
-
-
 @app.post("/api/tts/generate")
 def tts_generate(req: GenerateRequest):
-    reference, gen_params = _resolve_reference(req.voice_id, req.emotion)
+    reference, gen_params = library.resolve_voice_reference(req.voice_id, req.emotion)
+    if req.voice_id and library.get_voice(req.voice_id) is None:
+        raise HTTPException(404, f"音色不存在: {req.voice_id}")
     text = req.text
     seed, cfg, steps = req.seed, req.cfg_value, req.inference_timesteps
     if gen_params:  # 固化音色：复现描述前缀与参数（可被请求覆盖）
@@ -135,6 +116,80 @@ def tts_generate(req: GenerateRequest):
         "reference_wav_path": reference,
     })
     return record
+
+
+# ---------------- 角色管理（M3 后半） ----------------
+
+class CharacterRequest(BaseModel):
+    name: str
+    voice_id: str = ""
+    default_emotion: str = ""
+    description: str = ""
+
+
+@app.get("/api/characters")
+def list_chars():
+    return {"items": characters.list_characters()}
+
+
+@app.post("/api/characters")
+def create_char(req: CharacterRequest):
+    if req.voice_id and library.get_voice(req.voice_id) is None:
+        raise HTTPException(404, f"音色不存在: {req.voice_id}")
+    return characters.create_character(req.name, req.voice_id, req.default_emotion, req.description)
+
+
+@app.put("/api/characters/{char_id}")
+def update_char(char_id: str, req: CharacterRequest):
+    char = characters.update_character(char_id, **req.model_dump())
+    if char is None:
+        raise HTTPException(404, f"角色不存在: {char_id}")
+    return char
+
+
+@app.delete("/api/characters/{char_id}")
+def delete_char(char_id: str):
+    if not characters.delete_character(char_id):
+        raise HTTPException(404, f"角色不存在: {char_id}")
+    return {"ok": True}
+
+
+# ---------------- 对白批量合成与场次 ----------------
+
+class DialogueLine(BaseModel):
+    character_id: str
+    text: str
+    emotion: str = ""
+
+
+class BatchRequest(BaseModel):
+    scene_name: str
+    lines: list[DialogueLine]
+
+
+@app.post("/api/dialogue/batch")
+def dialogue_batch(req: BatchRequest):
+    if not req.lines:
+        raise HTTPException(400, "台词列表为空")
+    try:
+        return dialogue.run_batch(req.scene_name, [l.model_dump() for l in req.lines])
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"批量合成失败: {e}")
+
+
+@app.get("/api/dialogue/scenes")
+def dialogue_scenes():
+    return {"items": dialogue.list_scenes()}
+
+
+@app.get("/api/dialogue/scenes/{scene_id}")
+def dialogue_scene_detail(scene_id: str):
+    scene = dialogue.get_scene(scene_id)
+    if scene is None:
+        raise HTTPException(404, f"场次不存在: {scene_id}")
+    return scene
 
 
 @app.get("/api/tts/records")

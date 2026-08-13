@@ -100,6 +100,29 @@ def resolve_asset_file(kind: str, relpath: str) -> Path | None:
     return None
 
 
+def resolve_voice_reference(voice_id: str, emotion: str = "") -> tuple[str | None, dict | None]:
+    """解析音色引用：实录音色返回克隆参考样本路径；固化音色返回其 generation_params。
+
+    样本选择顺序：情绪匹配 > 首个样本。
+    """
+    if not voice_id:
+        return None, None
+    vdir = ASSETS_ROOT / "voices" / voice_id
+    meta_file = vdir / "voice.json"
+    if not meta_file.exists():
+        return None, None
+    meta = json.loads(meta_file.read_text(encoding="utf-8"))
+    samples = [s for s in meta.get("samples", []) if (vdir / s["file"]).exists()]
+    if not samples:
+        return None, meta.get("generation_params")
+    chosen = None
+    if emotion:
+        chosen = next((s for s in samples if s.get("emotion") == emotion), None)
+    if chosen is None:
+        chosen = samples[0]
+    return str(vdir / chosen["file"]), None
+
+
 def search_voices(q: str = "", gender: str = "", emotion: str = "") -> list[dict]:
     results = []
     for v in get_library()["voices"]:

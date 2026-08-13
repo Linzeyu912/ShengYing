@@ -57,7 +57,21 @@
 <div class="sub">角色对白 · VoxCPM2 内置合成 · 生成记录归档 · 音色固化 · 素材库</div>
 
 <div class="panel">
-  <h3>场次对白批量生成</h3>
+  <h3>项目与剧集</h3>
+  <div class="row">
+    <select id="projSelect" style="min-width:160px"><option value="">选择项目…</option></select>
+    <input id="projName" placeholder="新项目名" style="width:140px">
+    <button class="ghost" onclick="createProj()">建项目</button>
+    <span class="stats" style="margin:0">|</span>
+    <select id="epSelect" style="min-width:160px"><option value="">选择剧集（批量生成归属）…</option></select>
+    <input id="epNum" type="number" value="1" min="1" style="width:60px" title="集数">
+    <input id="epName" placeholder="新剧集名" style="width:140px">
+    <button class="ghost" onclick="createEp()">建剧集</button>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>场次对白批量生成 <span class="stats" id="batchEp"></span></h3>
   <div class="row">
     <input id="sceneName" placeholder="场次名称，如：第一集·雨夜对峙" style="flex:1; min-width:220px">
     <button class="ghost" onclick="addLine()">+ 加一行台词</button>
@@ -130,6 +144,62 @@ const grid = document.getElementById('grid');
 const stats = document.getElementById('stats');
 const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
 let debounce, voiceCache = [], charCache = [], emotionList = [], ambCache = [], sfxCache = [];
+let projCache = [], epCache = [], curEpisode = '';
+
+// ---------- 项目与剧集 ----------
+async function loadProjects() {
+  projCache = (await (await fetch('/api/projects')).json()).items;
+  const sel = document.getElementById('projSelect');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">选择项目…</option>';
+  projCache.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.project_id;
+    o.textContent = `${p.name}（${p.episode_count} 集）`;
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+  if (sel.value) loadEpisodes();
+}
+
+async function loadEpisodes() {
+  const pid = document.getElementById('projSelect').value;
+  const sel = document.getElementById('epSelect');
+  sel.innerHTML = '<option value="">选择剧集（批量生成归属）…</option>';
+  epCache = []; curEpisode = ''; updateBatchEp();
+  if (!pid) return;
+  epCache = (await (await fetch(`/api/projects/${pid}/episodes`)).json()).items;
+  epCache.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.episode_id;
+    o.textContent = `第${e.number}集 · ${e.name}`;
+    sel.appendChild(o);
+  });
+}
+
+function updateBatchEp() {
+  const ep = epCache.find(e => e.episode_id === curEpisode);
+  document.getElementById('batchEp').textContent = ep ? `（归属：第${ep.number}集 · ${ep.name}）` : '（未选择剧集，场次将不归属）';
+}
+
+async function createProj() {
+  const name = document.getElementById('projName').value.trim();
+  if (!name) { alert('输入项目名'); return; }
+  await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }) });
+  document.getElementById('projName').value = '';
+  loadProjects();
+}
+
+async function createEp() {
+  const pid = document.getElementById('projSelect').value;
+  const name = document.getElementById('epName').value.trim();
+  if (!pid || !name) { alert('先选项目，再输入剧集名'); return; }
+  await fetch(`/api/projects/${pid}/episodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, number: parseInt(document.getElementById('epNum').value) || 1 }) });
+  document.getElementById('epName').value = '';
+  loadEpisodes(); loadProjects();
+}
 
 function fillVoiceSelect(sel, withEmpty) {
   sel.innerHTML = withEmpty ? '<option value="">不使用库内音色</option>' : '<option value="">绑定音色（必选）</option>';
@@ -157,6 +227,7 @@ async function boot() {
   ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
   sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
   await loadChars();
+  await loadProjects();
   addLine();
   load(); loadHistory(); loadScenes();
 }
@@ -242,7 +313,7 @@ async function runBatch() {
   try {
     const r = await fetch('/api/dialogue/batch', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scene_name, lines }),
+      body: JSON.stringify({ scene_name, lines, episode_id: curEpisode }),
     });
     if (!r.ok) throw new Error((await r.json()).detail || r.status);
     const scene = await r.json();
@@ -260,7 +331,22 @@ async function loadScenes() {
   for (const s of data) {
     const head = document.createElement('div');
     head.className = 'scene-head';
-    head.textContent = `🎬 ${s.name} · ${s.line_count} 行 · ${s.created_at}`;
+    const epTag = s.episode_name ? `【${s.episode_name}】` : '【未归属】';
+    head.textContent = `🎬 ${epTag}${s.name} · ${s.line_count} 行 · ${s.created_at}${s.has_mix ? ' · 已混音' : ''}`;
+    if (!s.episode_id && epCache.length) {
+      const assign = document.createElement('select');
+      assign.style.cssText = 'margin-left:10px; font-size:12px; padding:2px 6px';
+      assign.innerHTML = '<option value="">分配到剧集…</option>';
+      epCache.forEach(e => { const o = document.createElement('option'); o.value = e.episode_id; o.textContent = `第${e.number}集 · ${e.name}`; assign.appendChild(o); });
+      assign.onclick = ev => ev.stopPropagation();
+      assign.onchange = async () => {
+        if (!assign.value) return;
+        await fetch(`/api/dialogue/scenes/${s.scene_id}/assign`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episode_id: assign.value }) });
+        loadScenes();
+      };
+      head.appendChild(assign);
+    }
     const detail = document.createElement('div');
     detail.className = 'scene-lines';
     head.onclick = async () => {
@@ -424,6 +510,8 @@ async function promote(rid) {
 for (const el of Object.values(els)) {
   el.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(load, 250); });
 }
+document.getElementById('projSelect').addEventListener('change', loadEpisodes);
+document.getElementById('epSelect').addEventListener('change', e => { curEpisode = e.target.value; updateBatchEp(); });
 boot();
 </script>
 </body>

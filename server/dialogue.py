@@ -11,16 +11,23 @@ import time
 import uuid
 from pathlib import Path
 
-from . import characters, library, records, tts
+from . import characters, library, projects, records, tts
 
 SCENES_ROOT = Path(__file__).resolve().parent.parent / "scenes"
 
 
-def run_batch(scene_name: str, lines: list[dict]) -> dict:
+def run_batch(scene_name: str, lines: list[dict], episode_id: str = "") -> dict:
     """按行批量合成对白。每行: {character_id, text, emotion?}
 
     角色绑定的音色决定克隆参考（或固化音色参数）；行内情绪覆盖角色默认情绪。
+    提供 episode_id 时场次归属对应剧集与项目。
     """
+    project_id, ep_name = "", ""
+    if episode_id:
+        ep = projects.get_episode(episode_id)
+        if ep is None:
+            raise ValueError(f"剧集不存在: {episode_id}")
+        project_id, ep_name = ep["project_id"], ep["name"]
     scene_id = time.strftime("%Y%m%d_%H%M%S") + "_" + uuid.uuid4().hex[:4]
     scene_lines = []
     for idx, line in enumerate(lines):
@@ -60,12 +67,30 @@ def run_batch(scene_name: str, lines: list[dict]) -> dict:
         })
     scene = {
         "scene_id": scene_id, "name": scene_name,
+        "project_id": project_id or None, "episode_id": episode_id or None,
+        "episode_name": ep_name or None,
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
         "line_count": len(scene_lines), "lines": scene_lines,
     }
     sdir = SCENES_ROOT / scene_id
     sdir.mkdir(parents=True, exist_ok=True)
     (sdir / "scene.json").write_text(
+        json.dumps(scene, ensure_ascii=False, indent=2), encoding="utf-8")
+    return scene
+
+
+def assign_scene(scene_id: str, episode_id: str) -> dict:
+    """把已有场次分配到剧集（老场次补归属用）。"""
+    scene = get_scene(scene_id)
+    if scene is None:
+        raise ValueError(f"场次不存在: {scene_id}")
+    ep = projects.get_episode(episode_id)
+    if ep is None:
+        raise ValueError(f"剧集不存在: {episode_id}")
+    scene["episode_id"] = episode_id
+    scene["project_id"] = ep["project_id"]
+    scene["episode_name"] = ep["name"]
+    (SCENES_ROOT / scene_id / "scene.json").write_text(
         json.dumps(scene, ensure_ascii=False, indent=2), encoding="utf-8")
     return scene
 
@@ -78,7 +103,13 @@ def list_scenes() -> list[dict]:
         f = sdir / "scene.json"
         if f.exists():
             s = json.loads(f.read_text(encoding="utf-8"))
-            out.append({k: s[k] for k in ("scene_id", "name", "created_at", "line_count")})
+            out.append({
+                "scene_id": s["scene_id"], "name": s["name"],
+                "created_at": s["created_at"], "line_count": s["line_count"],
+                "project_id": s.get("project_id"), "episode_id": s.get("episode_id"),
+                "episode_name": s.get("episode_name"),
+                "has_mix": "mix" in s,
+            })
     return sorted(out, key=lambda s: s["scene_id"], reverse=True)
 
 

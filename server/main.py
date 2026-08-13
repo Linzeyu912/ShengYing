@@ -165,6 +165,7 @@ class DialogueLine(BaseModel):
 class BatchRequest(BaseModel):
     scene_name: str
     lines: list[DialogueLine]
+    episode_id: str = ""
 
 
 @app.post("/api/dialogue/batch")
@@ -172,7 +173,7 @@ def dialogue_batch(req: BatchRequest):
     if not req.lines:
         raise HTTPException(400, "台词列表为空")
     try:
-        return dialogue.run_batch(req.scene_name, [l.model_dump() for l in req.lines])
+        return dialogue.run_batch(req.scene_name, [l.model_dump() for l in req.lines], req.episode_id)
     except ValueError as e:
         raise HTTPException(400, str(e))
     except Exception as e:
@@ -214,6 +215,73 @@ class PromoteRequest(BaseModel):
 def tts_promote(rid: str, req: PromoteRequest):
     try:
         return records.promote_to_voice(rid, req.name, req.gender)
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+
+
+# ---------------- 项目与剧集（M5） ----------------
+
+from . import projects
+
+
+class ProjectRequest(BaseModel):
+    name: str
+    description: str = ""
+
+
+@app.get("/api/projects")
+def list_projs():
+    return {"items": projects.list_projects()}
+
+
+@app.post("/api/projects")
+def create_proj(req: ProjectRequest):
+    return projects.create_project(req.name, req.description)
+
+
+@app.delete("/api/projects/{pid}")
+def delete_proj(pid: str):
+    if not projects.delete_project(pid):
+        raise HTTPException(404, f"项目不存在: {pid}")
+    return {"ok": True}
+
+
+class EpisodeRequest(BaseModel):
+    name: str
+    number: int = 1
+    description: str = ""
+
+
+@app.get("/api/projects/{pid}/episodes")
+def list_eps(pid: str):
+    if projects.get_project(pid) is None:
+        raise HTTPException(404, f"项目不存在: {pid}")
+    return {"items": projects.list_episodes(pid)}
+
+
+@app.post("/api/projects/{pid}/episodes")
+def create_ep(pid: str, req: EpisodeRequest):
+    try:
+        return projects.create_episode(pid, req.name, req.number, req.description)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.delete("/api/episodes/{eid}")
+def delete_ep(eid: str):
+    if not projects.delete_episode(eid):
+        raise HTTPException(404, f"剧集不存在: {eid}")
+    return {"ok": True}
+
+
+class AssignRequest(BaseModel):
+    episode_id: str
+
+
+@app.post("/api/dialogue/scenes/{scene_id}/assign")
+def assign_scene(scene_id: str, req: AssignRequest):
+    try:
+        return dialogue.assign_scene(scene_id, req.episode_id)
     except ValueError as e:
         raise HTTPException(400, str(e))
 

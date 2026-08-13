@@ -40,6 +40,68 @@ status: 产品仓库 · 音频组与视频合成组成果的软件化集成
 
 群像解决“故事里有什么、哪些故事值得讲”；视频一组解决“如何把故事写成专业剧本和分镜脚本”；音频组与视频二组解决“怎样把脚本制作成声音和画面”；声影把这些下游工程能力组织成可交付的软件。
 
+## 快速上手（组员试用）
+
+> 当前状态：**音频制作全链路功能原型已完成**（素材库 → 音色 → 角色 → 对白 → 混音 → 整集导出），界面为单页工程面板，正在内部试用收集问题，正式前端与桌面打包尚未开始。
+
+### 环境准备（一次性）
+
+```bash
+git clone https://github.com/Linzeyu912/ShengYing.git
+cd ShengYing
+
+# 1) Python 3.12 虚拟环境（注意：必须 < 3.13）
+python -m venv .venv
+
+# 2) 素材库服务依赖（轻量）
+.venv/Scripts/pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+# 3) VoxCPM 环境（详细说明见 requirements-voxcpm.txt）
+#    - torch/torchaudio 2.9.1+cu128（RTX 50 系显卡必须 cu128+）
+#    - voxcpm 用本地源码安装：.venv/Scripts/pip install -e ./third_party/VoxCPM
+#      （third_party/VoxCPM 需自行 git clone https://github.com/OpenBMB/VoxCPM.git）
+#    - gradio funasr modelscope soundfile
+
+# 4) 模型权重（约 4.7GB，国内走 ModelScope）
+.venv/Scripts/python -c "from modelscope import snapshot_download; snapshot_download('OpenBMB/VoxCPM2', local_dir='models/VoxCPM2')"
+```
+
+**硬件要求**：NVIDIA 显卡 ≥ 8GB 显存（FP16 推理）；无 GPU 可跑但极慢，暂不建议。
+
+### 启动
+
+```bash
+.venv/Scripts/python -m uvicorn server.main:app --port 8317
+# 浏览器打开 http://localhost:8317/
+```
+
+### 五分钟体验路线（用仓库自带示例数据）
+
+1. **项目与剧集**面板：选「示例短剧·夜雨」→「第一集 · 巷口相遇」
+2. **场次回放**：展开场次，逐行听对白；底部有混音面板可播混音/纯对白
+3. 点「🎧 **导出整集**」听一整集的效果
+4. 点「📦 **导入群像资产包**」，路径填 `examples/qunxiang_sample`，看预览报告 → 确认导入
+5. 新导入的场次是**草稿**，展开后点「生成全部台词」（首次需加载模型约 15–30 秒）
+6. 给新场做混音（可加载库里的雨声/雷声占位素材），再导出整集对比
+
+### 常见问题
+
+| 现象 | 说明 |
+| --- | --- |
+| `nvidia-smi` 报 NVML 错误 | 不影响，PyTorch 能正常调 CUDA（以应用内实测为准） |
+| 第一次点生成等很久 | 模型加载约 15–30 秒，之后每次合成只要几秒 |
+| 提示缺 ffmpeg | 不影响现有功能（已用 torchaudio 兜底） |
+| 8317 端口被占 | 启动命令换 `--port 8318` 即可 |
+| 批量生成中途页面转圈 | 正常，GPU 逐行串行合成，每行约 5–40 秒 |
+
+### 试用反馈请记录
+
+- 流程卡点：哪一步不知道点什么 / 哪一步等太久
+- 效果问题：哪个音色不像、哪种情绪不对、混音音量比例
+- 缺失需求：如场次手动排序、单行重生成、音效精确定位等
+
+---
+
 ## 七个仓库中的位置
 
 | 仓库/小组 | 定位 |

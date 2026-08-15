@@ -1,8 +1,8 @@
 {
-  "char_id": "c_56ea2cb8",
-  "name": "老陈",
-  "description": "",
-  "voice_id": "v_gen_09530532b5bf",
-  "default_emotion": "平静",
-  "created_at": "2026-08-13 09:16:10"
+ "char_id": "c_56ea2cb8",
+ "name": "老陈",
+ "description": "",
+ "voice_id": "v_low_male",
+ "default_emotion": "平静",
+ "created_at": "2026-08-13 09:16:10"
 }

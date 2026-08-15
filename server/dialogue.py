@@ -11,42 +11,31 @@ import time
 import uuid
 from pathlib import Path
 
-from . import characters, library, projects, records, tts
+from . import characters, projects, records, synthesis
 
 SCENES_ROOT = Path(__file__).resolve().parent.parent / "scenes"
 
 
 def _synth_line(scene_id: str, idx: int, char: dict, text: str, emotion: str) -> dict:
     """合成单行台词并归档生成记录，返回场次行数据。"""
-    reference, gen_params = library.resolve_voice_reference(
-        char.get("voice_id") or "", emotion)
-    seed, cfg, steps = None, 2.0, 10
-    if gen_params:  # 固化音色：复现描述前缀与参数
-        src = gen_params.get("text") or ""
-        if src.startswith("(") and ")" in src:
-            text = src[: src.index(")") + 1] + text
-        seed = gen_params.get("seed")
-        cfg = gen_params.get("cfg_value", cfg)
-        steps = gen_params.get("inference_timesteps", steps)
-        reference = gen_params.get("reference_wav_path") or reference
-    if not reference and not text.lstrip().startswith(("(", "（")):
+    voice_id = char.get("voice_id") or ""
+    if not voice_id and not text.lstrip().startswith(("(", "（")):
         raise ValueError(f"角色「{char['name']}」未绑定音色，无法合成")
-    wav, sr, used_seed = tts.synthesize(
-        text=text, reference_wav_path=reference,
-        seed=seed, cfg_value=cfg, inference_timesteps=steps)
+    wav, sr, meta = synthesis.generate(
+        text=text,
+        voice_id=voice_id,
+        emotion=emotion,
+        requested_mode=char.get("clone_mode") or "auto",
+    )
     record = records.save_record(wav, sr, {
-        "text": text if not gen_params else text[text.index(")") + 1:],
-        "mode": tts.detect_mode(text, reference),
-        "voice_id": char.get("voice_id") or None, "emotion": emotion or None,
-        "seed": used_seed, "cfg_value": cfg, "inference_timesteps": steps,
-        "reference_wav_path": reference,
+        **meta,
         "scene_id": scene_id, "character_id": char["char_id"], "line_index": idx,
     })
     return {
         "index": idx, "character_id": char["char_id"], "character_name": char["name"],
         "text": record["text"], "emotion": emotion or None,
         "record_id": record["record_id"], "duration_sec": record["duration_sec"],
-        "seed": used_seed,
+        "seed": meta["seed"], "mode": meta["mode"],
     }
 
 

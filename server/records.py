@@ -12,6 +12,8 @@ from __future__ import annotations
 import json
 import time
 import uuid
+import shutil
+import hashlib
 from pathlib import Path
 
 import numpy as np
@@ -63,36 +65,52 @@ def resolve_audio(rid: str) -> Path | None:
 
 
 def promote_to_voice(rid: str, name: str, gender: str = "unknown") -> dict:
-    """把一条生成记录固化为音色库音色（写入 generation_params）。"""
+    """把生成音频复制为可迁移的参考样本，并附带其精确文本。"""
     from . import library  # 延迟导入避免循环
 
     record = get_record(rid)
     if record is None:
         raise ValueError(f"生成记录不存在: {rid}")
+    source_audio = resolve_audio(rid)
+    if source_audio is None:
+        raise ValueError(f"生成音频不存在，无法固化: {rid}")
     voice_id = "v_gen_" + rid.split("_", 1)[-1].replace("_", "")
     vdir = library.ASSETS_ROOT / "voices" / voice_id
     if vdir.exists():
         raise ValueError(f"该记录已固化过: {voice_id}")
-    vdir.mkdir(parents=True)
+    samples_dir = vdir / "samples"
+    samples_dir.mkdir(parents=True)
+    sample_name = "01_参考.wav"
+    sample_path = samples_dir / sample_name
+    shutil.copy2(source_audio, sample_path)
+    digest = hashlib.sha256(sample_path.read_bytes()).hexdigest()
     voice_json = {
         "voice_id": voice_id,
         "name": name,
-        "mode": "generation_params",       # 由生成记录固化，无参考音频
+        "mode": "reference_samples",
+        "default_clone_mode": "ultimate_clone",
         "gender": gender,
         "description": record.get("text", "")[:50],
         "language": "zh",
-        "generation_params": {
+        "source_generation": {
             "source_record": rid,
             "tts_mode": record.get("mode"),
-            "text": record.get("text"),
             "seed": record.get("seed"),
             "cfg_value": record.get("cfg_value"),
             "inference_timesteps": record.get("inference_timesteps"),
-            "reference_wav_path": record.get("reference_wav_path"),
         },
-        "samples": [],
+        "samples": [{
+            "sample_id": "s_" + uuid.uuid4().hex[:8],
+            "file": f"samples/{sample_name}",
+            "emotion": record.get("emotion") or "参考",
+            "transcript": record.get("text") or "",
+            "clone_mode": "ultimate_clone",
+            "sha256": digest,
+            "source_record": rid,
+        }],
         "bound_characters": [],
         "license": "original",
+        "consent_confirmed": True,
         "version": "v1.0",
         "created_at": time.strftime("%Y-%m-%d"),
     }

@@ -5,13 +5,18 @@
     .venv/Scripts/python -m uvicorn server.main:app --reload --port 8317
 浏览器打开 http://localhost:8317/ 进入素材浏览试听页。
 """
-from fastapi import FastAPI, HTTPException, Query
+from fastapi import FastAPI, Form, HTTPException, Query, UploadFile
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
-from . import library
+from . import library, tts
 
 app = FastAPI(title="声影素材库服务", version="0.2.0")
+
+
+@app.get("/api/system/tts-status")
+def tts_status():
+    return {**tts.runtime_status(), "voice_assets": library.voice_asset_status()}
 
 
 @app.get("/api/library/summary")
@@ -51,6 +56,39 @@ def voice_sample_audio(voice_id: str, filename: str):
     return FileResponse(path, media_type="audio/wav", filename=path.name)
 
 
+@app.post("/api/voices/import")
+async def import_voice(
+    file: UploadFile,
+    name: str = Form(...),
+    transcript: str = Form(...),
+    gender: str = Form("unknown"),
+    emotion: str = Form("平静"),
+    description: str = Form(""),
+    language: str = Form("zh"),
+    license_name: str = Form("authorized"),
+    consent_confirmed: bool = Form(False),
+):
+    """导入一段已授权 WAV，并保存为可复用的极致克隆音色。"""
+    data = await file.read()
+    if len(data) > 50 * 1024 * 1024:
+        raise HTTPException(400, "参考音频超过 50MB")
+    try:
+        return library.import_voice(
+            audio_data=data,
+            filename=file.filename or "reference.wav",
+            name=name,
+            transcript=transcript,
+            gender=gender,
+            emotion=emotion,
+            description=description,
+            language=language,
+            license_name=license_name,
+            consent_confirmed=consent_confirmed,
+        )
+    except ValueError as exc:
+        raise HTTPException(400, str(exc))
+
+
 @app.get("/api/assets/{kind}")
 def list_simple_assets(kind: str):
     if kind not in ("sfx", "ambience"):
@@ -76,7 +114,7 @@ def refresh_library():
 
 from pydantic import BaseModel
 
-from . import characters, dialogue, records, tts
+from . import characters, dialogue, records, synthesis
 
 
 class GenerateRequest(BaseModel):
@@ -86,36 +124,34 @@ class GenerateRequest(BaseModel):
     seed: int | None = None     # 不传则随机生成并记录在案
     cfg_value: float = 2.0
     inference_timesteps: int = 10
+    mode: str = "auto"
+    prompt_text: str = ""       # 可覆盖音色样本内保存的精确转录
+    normalize: bool = False
+    denoise: bool = False
 
 
 @app.post("/api/tts/generate")
 def tts_generate(req: GenerateRequest):
-    reference, gen_params = library.resolve_voice_reference(req.voice_id, req.emotion)
     if req.voice_id and library.get_voice(req.voice_id) is None:
         raise HTTPException(404, f"音色不存在: {req.voice_id}")
-    text = req.text
-    seed, cfg, steps = req.seed, req.cfg_value, req.inference_timesteps
-    if gen_params:  # 固化音色：复现描述前缀与参数（可被请求覆盖）
-        src_text = gen_params.get("text") or ""
-        if src_text.startswith("(") and ")" in src_text:
-            text = src_text[: src_text.index(")") + 1] + text
-        seed = seed if seed is not None else gen_params.get("seed")
-        cfg = gen_params.get("cfg_value", cfg)
-        steps = gen_params.get("inference_timesteps", steps)
-        reference = gen_params.get("reference_wav_path") or reference
     try:
-        wav, sr, used_seed = tts.synthesize(
-            text=text, reference_wav_path=reference,
-            seed=seed, cfg_value=cfg, inference_timesteps=steps)
+        wav, sr, meta = synthesis.generate(
+            text=req.text,
+            voice_id=req.voice_id,
+            emotion=req.emotion,
+            requested_mode=req.mode,
+            prompt_text_override=req.prompt_text,
+            seed=req.seed,
+            cfg_value=req.cfg_value,
+            inference_timesteps=req.inference_timesteps,
+            normalize=req.normalize,
+            denoise=req.denoise,
+        )
+    except (ValueError, FileNotFoundError) as e:
+        raise HTTPException(400, str(e))
     except Exception as e:
         raise HTTPException(500, f"合成失败: {e}")
-    record = records.save_record(wav, sr, {
-        "text": req.text, "mode": tts.detect_mode(text, reference),
-        "voice_id": req.voice_id or None, "emotion": req.emotion or None,
-        "seed": used_seed, "cfg_value": cfg, "inference_timesteps": steps,
-        "reference_wav_path": reference,
-    })
-    return record
+    return records.save_record(wav, sr, meta)
 
 
 # ---------------- 角色管理（M3 后半） ----------------
@@ -125,6 +161,7 @@ class CharacterRequest(BaseModel):
     voice_id: str = ""
     default_emotion: str = ""
     description: str = ""
+    clone_mode: str = "auto"
 
 
 @app.get("/api/characters")
@@ -136,7 +173,11 @@ def list_chars():
 def create_char(req: CharacterRequest):
     if req.voice_id and library.get_voice(req.voice_id) is None:
         raise HTTPException(404, f"音色不存在: {req.voice_id}")
-    return characters.create_character(req.name, req.voice_id, req.default_emotion, req.description)
+    if req.clone_mode not in synthesis.VALID_MODES - {"basic", "design"}:
+        raise HTTPException(400, "角色克隆模式仅支持 auto / controllable_clone / ultimate_clone")
+    return characters.create_character(
+        req.name, req.voice_id, req.default_emotion, req.description,
+        clone_mode=req.clone_mode)
 
 
 @app.put("/api/characters/{char_id}")
@@ -370,8 +411,6 @@ def generate_draft_lines(scene_id: str):
 
 
 # ---------------- 混音与素材导入（M4） ----------------
-
-from fastapi import UploadFile
 
 from . import mixer
 

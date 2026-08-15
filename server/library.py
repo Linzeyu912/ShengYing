@@ -4,9 +4,15 @@ from __future__ import annotations
 
 import json
 import time
+import hashlib
+import uuid
+import os
 from pathlib import Path
 
-ASSETS_ROOT = Path(__file__).resolve().parent.parent / "assets"
+ASSETS_ROOT = Path(os.environ.get(
+    "SHENGYING_ASSETS_DIR",
+    str(Path(__file__).resolve().parent.parent / "assets"),
+)).resolve()
 EMOTIONS = ["开心", "悲伤", "愤怒", "惊讶", "平静", "紧张", "温柔", "严肃", "调皮", "疲惫"]
 
 _cache: dict = {"loaded_at": 0.0, "voices": [], "sfx": [], "ambience": []}
@@ -24,14 +30,20 @@ def _load_voices() -> list[dict]:
             continue
         meta = json.loads(meta_file.read_text(encoding="utf-8"))
         samples = []
+        missing_samples = []
         for s in meta.get("samples", []):
             f = vdir / s["file"]
             if f.exists():
                 samples.append({
                     **s,
+                    "sample_id": s.get("sample_id") or f.stem,
+                    "clone_mode": s.get("clone_mode") or (
+                        "ultimate_clone" if s.get("transcript") else "controllable_clone"),
                     "url": f"/api/voices/{meta['voice_id']}/audio/{f.name}",
                     "size_bytes": f.stat().st_size,
                 })
+            else:
+                missing_samples.append(s.get("file", ""))
         voices.append({
             "voice_id": meta["voice_id"],
             "name": meta["name"],
@@ -40,8 +52,11 @@ def _load_voices() -> list[dict]:
             "language": meta.get("language", "zh"),
             "version": meta.get("version", ""),
             "license": meta.get("license", ""),
+            "consent_confirmed": meta.get("consent_confirmed", False),
+            "default_clone_mode": meta.get("default_clone_mode", "auto"),
             "emotions": meta.get("emotions", []),
             "known_issues": meta.get("known_issues", []),
+            "missing_samples": missing_samples,
             "samples": samples,
         })
     return voices
@@ -100,27 +115,160 @@ def resolve_asset_file(kind: str, relpath: str) -> Path | None:
     return None
 
 
-def resolve_voice_reference(voice_id: str, emotion: str = "") -> tuple[str | None, dict | None]:
-    """解析音色引用：实录音色返回克隆参考样本路径；固化音色返回其 generation_params。
+def _resolve_stored_asset(asset_path: str | None) -> Path | None:
+    """解析库内相对引用，并兼容旧记录里的绝对路径。"""
+    if not asset_path:
+        return None
+    raw = Path(asset_path)
+    base = ASSETS_ROOT.resolve()
+    if raw.is_file():
+        resolved = raw.resolve()
+        if resolved == base or base in resolved.parents:
+            return resolved
+    normalized = str(asset_path).replace("\\", "/")
+    marker = "assets/"
+    if marker in normalized:
+        normalized = normalized.split(marker, 1)[1]
+    candidate = (ASSETS_ROOT / normalized).resolve()
+    if candidate.is_file() and (candidate == base or base in candidate.parents):
+        return candidate
+    return None
+
+
+def resolve_voice_reference(voice_id: str, emotion: str = "") -> dict:
+    """解析音色引用，返回音频、转录、稳定资产引用和兼容参数。
 
     样本选择顺序：情绪匹配 > 首个样本。
     """
+    empty = {
+        "path": None, "asset_path": None, "sample_id": None,
+        "transcript": "", "clone_mode": "", "generation_params": None,
+    }
     if not voice_id:
-        return None, None
+        return empty
     vdir = ASSETS_ROOT / "voices" / voice_id
     meta_file = vdir / "voice.json"
     if not meta_file.exists():
-        return None, None
+        return empty
     meta = json.loads(meta_file.read_text(encoding="utf-8"))
     samples = [s for s in meta.get("samples", []) if (vdir / s["file"]).exists()]
     if not samples:
-        return None, meta.get("generation_params")
+        params = meta.get("generation_params") or {}
+        stored = params.get("reference_asset") or params.get("reference_wav_path")
+        recovered = _resolve_stored_asset(stored)
+        recovered_asset = (
+            recovered.relative_to(ASSETS_ROOT.resolve()).as_posix() if recovered else None)
+        return {
+            **empty,
+            "path": str(recovered) if recovered else None,
+            "asset_path": recovered_asset,
+            "transcript": params.get("prompt_text") or "",
+            "clone_mode": params.get("tts_mode") or "",
+            "generation_params": params or None,
+        }
     chosen = None
     if emotion:
         chosen = next((s for s in samples if s.get("emotion") == emotion), None)
     if chosen is None:
         chosen = samples[0]
-    return str(vdir / chosen["file"]), None
+    path = (vdir / chosen["file"]).resolve()
+    rel = path.relative_to(ASSETS_ROOT.resolve()).as_posix()
+    preferred = chosen.get("clone_mode") or meta.get("default_clone_mode") or "auto"
+    if preferred == "auto":
+        preferred = "ultimate_clone" if chosen.get("transcript") else "controllable_clone"
+    return {
+        "path": str(path),
+        "asset_path": rel,
+        "sample_id": chosen.get("sample_id") or path.stem,
+        "transcript": chosen.get("transcript") or "",
+        "clone_mode": preferred,
+        "generation_params": None,
+    }
+
+
+def import_voice(
+    audio_data: bytes,
+    filename: str,
+    name: str,
+    transcript: str,
+    gender: str = "unknown",
+    emotion: str = "平静",
+    description: str = "",
+    language: str = "zh",
+    license_name: str = "authorized",
+    consent_confirmed: bool = False,
+) -> dict:
+    """把上传的 WAV 与精确转录保存为可复用的极致克隆音色。"""
+    if not name.strip():
+        raise ValueError("音色名称不能为空")
+    if not transcript.strip():
+        raise ValueError("极致克隆需要参考音频的精确转录文本")
+    if not consent_confirmed:
+        raise ValueError("必须确认已获得声音使用授权")
+    if gender not in ("male", "female", "unknown"):
+        raise ValueError("gender 仅支持 male / female / unknown")
+    if not filename.lower().endswith(".wav"):
+        raise ValueError("当前音色导入仅支持 WAV 文件")
+    if len(audio_data) < 44 or audio_data[:4] != b"RIFF" or audio_data[8:12] != b"WAVE":
+        raise ValueError("文件不是有效的 WAV 音频")
+
+    voice_id = "v_user_" + uuid.uuid4().hex[:8]
+    sample_id = "s_" + uuid.uuid4().hex[:8]
+    vdir = ASSETS_ROOT / "voices" / voice_id
+    samples_dir = vdir / "samples"
+    samples_dir.mkdir(parents=True)
+    safe_emotion = "".join(c for c in emotion.strip() if c not in '\\/:*?"<>|') or "平静"
+    sample_name = f"01_{safe_emotion}.wav"
+    audio_path = samples_dir / sample_name
+    audio_path.write_bytes(audio_data)
+    digest = hashlib.sha256(audio_data).hexdigest()
+    voice_json = {
+        "voice_id": voice_id,
+        "name": name.strip(),
+        "mode": "reference_samples",
+        "default_clone_mode": "ultimate_clone",
+        "gender": gender,
+        "description": description.strip(),
+        "language": language.strip() or "zh",
+        "emotions": [safe_emotion],
+        "samples": [{
+            "sample_id": sample_id,
+            "file": f"samples/{sample_name}",
+            "emotion": safe_emotion,
+            "transcript": transcript.strip(),
+            "clone_mode": "ultimate_clone",
+            "sha256": digest,
+            "source_file": filename,
+        }],
+        "bound_characters": [],
+        "license": license_name.strip() or "authorized",
+        "consent_confirmed": True,
+        "version": "v1.0",
+        "created_at": time.strftime("%Y-%m-%d"),
+    }
+    (vdir / "voice.json").write_text(
+        json.dumps(voice_json, ensure_ascii=False, indent=2), encoding="utf-8")
+    get_library(force=True)
+    return get_voice(voice_id) or voice_json
+
+
+def voice_asset_status() -> dict:
+    voices_dir = ASSETS_ROOT / "voices"
+    declared = missing = ultimate_ready = 0
+    if voices_dir.exists():
+        for meta_file in voices_dir.glob("*/voice.json"):
+            meta = json.loads(meta_file.read_text(encoding="utf-8"))
+            for sample in meta.get("samples", []):
+                declared += 1
+                if not (meta_file.parent / sample.get("file", "")).is_file():
+                    missing += 1
+                elif sample.get("transcript"):
+                    ultimate_ready += 1
+    return {
+        "declared_samples": declared,
+        "missing_samples": missing,
+        "ultimate_ready_samples": ultimate_ready,
+    }
 
 
 def search_voices(q: str = "", gender: str = "", emotion: str = "") -> list[dict]:

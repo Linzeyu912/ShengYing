@@ -23,13 +23,15 @@ def _write(char: dict) -> dict:
 
 
 def create_character(name: str, voice_id: str = "", default_emotion: str = "",
-                     description: str = "", qunxiang_id: str = "") -> dict:
+                     description: str = "", qunxiang_id: str = "",
+                     clone_mode: str = "auto") -> dict:
     char = {
         "char_id": "c_" + uuid.uuid4().hex[:8],
         "name": name,
         "description": description,
         "voice_id": voice_id,            # 绑定的音色（assets/voices/<voice_id>）
         "default_emotion": default_emotion,
+        "clone_mode": clone_mode,
         "created_at": time.strftime("%Y-%m-%d %H:%M:%S"),
     }
     if qunxiang_id:
@@ -57,7 +59,7 @@ def update_character(char_id: str, **fields) -> dict | None:
     char = get_character(char_id)
     if char is None:
         return None
-    for k in ("name", "description", "voice_id", "default_emotion", "qunxiang_id"):
+    for k in ("name", "description", "voice_id", "default_emotion", "qunxiang_id", "clone_mode"):
         if k in fields and fields[k] is not None:
             char[k] = fields[k]
     return _write(char)

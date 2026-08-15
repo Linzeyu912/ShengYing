@@ -46,27 +46,37 @@ status: 产品仓库 · 音频组与视频合成组成果的软件化集成
 
 ### 环境准备（一次性）
 
+Windows 推荐在 PowerShell 中运行自动安装脚本：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File scripts/setup_voxcpm.ps1
+```
+
+脚本会创建 `.venv`、安装服务与 VoxCPM2 依赖，并按需下载模型。也可以按下面步骤手工安装：
+
+> 必须使用 Python 3.10–3.12，推荐 3.11。安装脚本会优先查找 Python 3.11，并拒绝使用不兼容的 Python 3.13。
+
 ```bash
 git clone https://github.com/Linzeyu912/ShengYing.git
 cd ShengYing
 
-# 1) Python 3.12 虚拟环境（注意：必须 < 3.13）
-python -m venv .venv
+# 1) Python 3.11 虚拟环境（注意：必须 < 3.13）
+py -3.11 -m venv .venv
 
 # 2) 素材库服务依赖（轻量）
 .venv/Scripts/pip install -r requirements.txt -i https://pypi.tuna.tsinghua.edu.cn/simple
 
 # 3) VoxCPM 环境（详细说明见 requirements-voxcpm.txt）
-#    - torch/torchaudio 2.9.1+cu128（RTX 50 系显卡必须 cu128+）
-#    - voxcpm 用本地源码安装：.venv/Scripts/pip install -e ./third_party/VoxCPM
-#      （third_party/VoxCPM 需自行 git clone https://github.com/OpenBMB/VoxCPM.git）
-#    - gradio funasr modelscope soundfile
+#    NVIDIA/CUDA 12.8：
+.venv/Scripts/pip install torch==2.9.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+#    无 NVIDIA GPU：把上一行末尾的 cu128 改为 cpu
+.venv/Scripts/pip install voxcpm==2.0.3 modelscope
 
 # 4) 模型权重（约 4.7GB，国内走 ModelScope）
 .venv/Scripts/python -c "from modelscope import snapshot_download; snapshot_download('OpenBMB/VoxCPM2', local_dir='models/VoxCPM2')"
 ```
 
-**硬件要求**：NVIDIA 显卡 ≥ 8GB 显存（FP16 推理）；无 GPU 可跑但极慢，暂不建议。
+**硬件说明**：推荐使用 NVIDIA CUDA 显卡；没有 NVIDIA GPU 时会自动回退 CPU。本机 Intel Core Ultra 7 155H 实测可运行，4.5 秒短句约需 37 秒，极致克隆约需 76 秒。
 
 ### 启动
 
@@ -74,6 +84,19 @@ python -m venv .venv
 .venv/Scripts/python -m uvicorn server.main:app --port 8317
 # 浏览器打开 http://localhost:8317/
 ```
+
+也可以双击仓库根目录的 `启动VoxCPM网页.bat`。启动脚本使用自身目录，不再依赖固定盘符。
+
+### VoxCPM2 极致克隆
+
+1. 打开「导入极致克隆音色」。
+2. 上传一段 5–30 秒、单人、无背景音乐的干净 WAV。
+3. 填写音频的精确逐字转录，并确认已获得声音使用授权。
+4. 导入后在单句合成或角色管理中选择该音色；自动模式会优先使用极致克隆。
+
+极致克隆会把同一音频同时作为 `prompt_wav_path` 与 `reference_wav_path`，并把转录传给 `prompt_text`。没有转录的旧音色样本会自动回退为可控克隆。页面顶部的运行状态会检查模型、实际运行设备、缺失音频和可用于极致克隆的样本数量。
+
+> Git 仓库不包含大体积 WAV 与模型权重。从 GitHub 新下载的副本必须自行导入参考音频并下载 `models/VoxCPM2`。
 
 ### 五分钟体验路线（用仓库自带示例数据）
 
@@ -89,10 +112,10 @@ python -m venv .venv
 | 现象 | 说明 |
 | --- | --- |
 | `nvidia-smi` 报 NVML 错误 | 不影响，PyTorch 能正常调 CUDA（以应用内实测为准） |
-| 第一次点生成等很久 | 模型加载约 15–30 秒，之后每次合成只要几秒 |
+| 第一次点生成等很久 | 模型加载约 15–30 秒；CUDA 后续通常较快，CPU 每句仍可能需要几十秒以上 |
 | 提示缺 ffmpeg | 不影响现有功能（已用 torchaudio 兜底） |
 | 8317 端口被占 | 启动命令换 `--port 8318` 即可 |
-| 批量生成中途页面转圈 | 正常，GPU 逐行串行合成，每行约 5–40 秒 |
+| 批量生成中途页面转圈 | 正常，服务会逐行串行合成；CPU 用时会明显更长 |
 
 ### 试用反馈请记录
 
@@ -297,9 +320,9 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 # 浏览器打开 http://localhost:8317/ 进入素材浏览试听页
 ```
 
-当前进行中：音效库与环境音库素材收集；VoxCPM 源码已拉取至 `third_party/VoxCPM` 并完成[功能拆分](docs/voxcpm-功能拆分.md)，待讨论确定保留功能后进入 M3 适配。
+当前进行中：音效库与环境音库素材收集；VoxCPM2 已完成 M3 适配与极致克隆接入，功能分析见[功能拆分](docs/voxcpm-功能拆分.md)。
 
-**VoxCPM2 本地环境已就绪**（2026-08-06）：torch 2.9.1+cu128 + voxcpm 2.0.3 + 权重 4.7GB（`models/VoxCPM2`），RTX 5070 Laptop GPU 实测 CUDA 可用；基础 TTS / 音色设计 / 可控克隆三种模式均已用音色库样本跑通（见 `scripts/test_voxcpm_clone.py`，环境搭建步骤见 `requirements-voxcpm.txt`）。
+**VoxCPM2 接入已完成**：支持基础 TTS、音色设计、可控克隆和“参考音频 + 精确转录”的极致克隆。运行 `scripts/setup_voxcpm.ps1` 会优先使用 Python 3.11/3.12，并根据本机是否存在 NVIDIA GPU 自动安装 CUDA 或 CPU 版 PyTorch；Intel/AMD 显卡当前走 CPU 回退（速度会明显慢于 CUDA）。模型与克隆链路验证见 `scripts/test_voxcpm_clone.py`。
 
 欢迎围绕以下方向参与讨论：
 

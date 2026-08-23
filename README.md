@@ -338,4 +338,4 @@ python -m venv .venv && .venv/Scripts/pip install -r requirements.txt
 
 使用者应确保输入文本、参考素材、声音数据和生成内容均已获得必要授权，并遵守所接入模型服务及发布平台的相关规则。
 
-License：待定。
+本仓库依据专有的 [Source-Available Non-Commercial License](LICENSE) 提供：允许非商业性的阅读、学习、参考、修改、衍生创作、跨项目复用、免费再分发以及个人、私有或内部自用；任何商业使用、出售、变现、付费服务、商业部署或用于商业产品与服务，均须事先取得版权方的书面许可。

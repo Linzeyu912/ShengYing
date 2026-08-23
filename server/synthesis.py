@@ -27,6 +27,10 @@ def generate(
         raise ValueError("inference_timesteps 应在 4–30 之间")
 
     ref = library.resolve_voice_reference(voice_id, emotion)
+    if ref.get("voice_source") == "lora":
+        raise ValueError(
+            "该音色为 LoRA 微调来源，当前合成路径尚未接入（待引擎确定后实施）；"
+            "请改用 reference_samples 或 design 来源的音色。")
     params = ref.get("generation_params") or {}
     source_text = params.get("text") or ""
     effective_text = text

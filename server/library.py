@@ -18,6 +18,21 @@ EMOTIONS = ["开心", "悲伤", "愤怒", "惊讶", "平静", "紧张", "温柔"
 _cache: dict = {"loaded_at": 0.0, "voices": [], "sfx": [], "ambience": []}
 _TTL = 5.0  # 秒；开发期短缓存，避免每次请求都扫盘
 
+# 音色来源：统一标识"音色怎么来的"，是 voice.json 的权威字段。
+# 缺失时按旧字段推断，保证 v1.1 及更早音色向后兼容。
+VOICE_SOURCES = ("reference_samples", "design", "lora")
+
+
+def _infer_voice_source(meta: dict) -> str:
+    """从 voice.json 推断权威来源；优先显式字段，其次按内容特征回退。"""
+    if meta.get("voice_source") in VOICE_SOURCES:
+        return meta["voice_source"]
+    if meta.get("lora"):
+        return "lora"
+    if meta.get("generation_params"):
+        return "design"
+    return "reference_samples"
+
 
 def _load_voices() -> list[dict]:
     voices = []
@@ -54,6 +69,9 @@ def _load_voices() -> list[dict]:
             "license": meta.get("license", ""),
             "consent_confirmed": meta.get("consent_confirmed", False),
             "default_clone_mode": meta.get("default_clone_mode", "auto"),
+            "voice_source": _infer_voice_source(meta),
+            "lora": meta.get("lora"),
+            "generation_params": meta.get("generation_params"),
             "emotions": meta.get("emotions", []),
             "known_issues": meta.get("known_issues", []),
             "missing_samples": missing_samples,
@@ -143,6 +161,7 @@ def resolve_voice_reference(voice_id: str, emotion: str = "") -> dict:
     empty = {
         "path": None, "asset_path": None, "sample_id": None,
         "transcript": "", "clone_mode": "", "generation_params": None,
+        "voice_source": "",
     }
     if not voice_id:
         return empty
@@ -151,6 +170,22 @@ def resolve_voice_reference(voice_id: str, emotion: str = "") -> dict:
     if not meta_file.exists():
         return empty
     meta = json.loads(meta_file.read_text(encoding="utf-8"))
+    voice_source = _infer_voice_source(meta)
+
+    # LoRA 来源：当前合成路径尚未接入，返回权重信息供上层识别并拦截，
+    # 避免被误当作克隆 / 基础 TTS 静默降级。
+    if voice_source == "lora":
+        lora = meta.get("lora") or {}
+        return {
+            **empty,
+            "voice_source": "lora",
+            "clone_mode": "lora",
+            "lora": lora,
+            "weight_path": lora.get("weight_path"),
+            "engine": lora.get("engine"),
+            "base_model": lora.get("base_model"),
+        }
+
     samples = [s for s in meta.get("samples", []) if (vdir / s["file"]).exists()]
     if not samples:
         params = meta.get("generation_params") or {}
@@ -160,6 +195,7 @@ def resolve_voice_reference(voice_id: str, emotion: str = "") -> dict:
             recovered.relative_to(ASSETS_ROOT.resolve()).as_posix() if recovered else None)
         return {
             **empty,
+            "voice_source": voice_source,
             "path": str(recovered) if recovered else None,
             "asset_path": recovered_asset,
             "transcript": params.get("prompt_text") or "",
@@ -177,6 +213,7 @@ def resolve_voice_reference(voice_id: str, emotion: str = "") -> dict:
     if preferred == "auto":
         preferred = "ultimate_clone" if chosen.get("transcript") else "controllable_clone"
     return {
+        "voice_source": voice_source,
         "path": str(path),
         "asset_path": rel,
         "sample_id": chosen.get("sample_id") or path.stem,
@@ -226,6 +263,7 @@ def import_voice(
         "voice_id": voice_id,
         "name": name.strip(),
         "mode": "reference_samples",
+        "voice_source": "reference_samples",
         "default_clone_mode": "ultimate_clone",
         "gender": gender,
         "description": description.strip(),

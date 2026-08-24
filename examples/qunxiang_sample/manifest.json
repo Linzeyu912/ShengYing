@@ -1,0 +1,16 @@
+{
+  "package_version": "0.1",
+  "exported_at": "2026-08-13T10:00:00+08:00",
+  "source": { "tool": "qunxiang", "tool_version": "0.0.0-sample", "project_ref": "夜雨" },
+  "project": { "title": "夜雨", "description": "示例短剧：一场雨夜相遇牵出的二十年旧约", "genre": "悬疑" },
+  "episodes": [
+    { "id": "ep01", "number": 1, "title": "巷口相遇", "script": "script/ep01.json" }
+  ],
+  "characters": [
+    "characters/chen_mo.json",
+    "characters/xiao_ling.json"
+  ],
+  "scenes": [
+    "scenes/alley_night.json"
+  ]
+}

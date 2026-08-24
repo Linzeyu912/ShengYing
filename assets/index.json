@@ -1,0 +1,71 @@
+{
+  "library": "声影音频素材库",
+  "version": "v1.1",
+  "voices": [
+    {
+      "voice_id": "v_low_male",
+      "name": "低沉男声",
+      "gender": "male",
+      "sample_count": 10,
+      "path": "voices/v_low_male/"
+    },
+    {
+      "voice_id": "v_uncle",
+      "name": "大叔音",
+      "gender": "male",
+      "sample_count": 10,
+      "path": "voices/v_uncle/"
+    },
+    {
+      "voice_id": "v_boy",
+      "name": "少年音",
+      "gender": "male",
+      "sample_count": 10,
+      "path": "voices/v_boy/"
+    },
+    {
+      "voice_id": "v_yujie",
+      "name": "御姐音",
+      "gender": "female",
+      "sample_count": 10,
+      "path": "voices/v_yujie/"
+    },
+    {
+      "voice_id": "v_gentle_female",
+      "name": "温柔女声",
+      "gender": "female",
+      "sample_count": 10,
+      "path": "voices/v_gentle_female/"
+    },
+    {
+      "voice_id": "v_raspy",
+      "name": "烟嗓音",
+      "gender": "unknown",
+      "sample_count": 10,
+      "path": "voices/v_raspy/"
+    },
+    {
+      "voice_id": "v_old_male",
+      "name": "老人音（男）",
+      "gender": "male",
+      "sample_count": 11,
+      "path": "voices/v_old_male/"
+    },
+    {
+      "voice_id": "v_old_female",
+      "name": "老人音（女）",
+      "gender": "female",
+      "sample_count": 10,
+      "path": "voices/v_old_female/"
+    },
+    {
+      "voice_id": "v_loli",
+      "name": "萝莉音",
+      "gender": "female",
+      "sample_count": 10,
+      "path": "voices/v_loli/"
+    }
+  ],
+  "sfx": [],
+  "ambience": []
+}

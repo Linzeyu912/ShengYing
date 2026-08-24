@@ -1,0 +1,18 @@
+# VoxCPM2 运行环境说明；推荐直接运行 scripts/setup_voxcpm.ps1 自动安装。
+# VoxCPM 2.0.3 支持 Python 3.10-3.12，本项目以 Python 3.11 验证。
+
+# PyTorch 与 torchaudio 必须保持同版本、同一软件源。
+# NVIDIA/CUDA 12.8：
+#   pip install torch==2.9.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cu128
+# 无 NVIDIA GPU（Intel/AMD 当前回退到 CPU）：
+#   pip install torch==2.9.1 torchaudio==2.9.1 --index-url https://download.pytorch.org/whl/cpu
+
+# VoxCPM2 Python 接口与模型下载器：
+voxcpm==2.0.3
+modelscope
+
+# 模型权重（约 4.7 GB，不入 git）：
+#   python -c "from modelscope import snapshot_download; snapshot_download('OpenBMB/VoxCPM2', local_dir='models/VoxCPM2')"
+
+# VoxCPM 2.0.3 不接收 generate(seed=...)；server/tts.py 会在推理前统一设置
+# Python、NumPy 与 PyTorch 随机数状态，并把实际 seed 写入生成记录。

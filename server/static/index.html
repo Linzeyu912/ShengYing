@@ -1,0 +1,768 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声影 · 音频工作台</title>
+<style>
+  :root { --bg:#0f1115; --card:#1a1e27; --line:#2a3040; --fg:#e8eaf0; --dim:#9aa3b5; --accent:#5b8cff; }
+  * { box-sizing: border-box; margin: 0; }
+  body { background: var(--bg); color: var(--fg); font-family: "Microsoft YaHei", system-ui, sans-serif; padding: 24px; max-width: 1200px; margin: 0 auto; }
+  h1 { font-size: 20px; margin-bottom: 4px; }
+  h3 { font-size: 15px; margin-bottom: 10px; }
+  .sub { color: var(--dim); font-size: 13px; margin-bottom: 20px; }
+  .panel { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; margin-bottom: 24px; }
+  .bar { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+  .bar input, .bar select, .panel input, .panel select, .panel textarea {
+    background: #12151c; border: 1px solid var(--line); color: var(--fg);
+    border-radius: 8px; padding: 8px 12px; font-size: 14px; outline: none; }
+  .bar input { width: 220px; }
+  .panel textarea { width: 100%; min-height: 64px; resize: vertical; margin-bottom: 10px; font-family: inherit; }
+  .panel .row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+  button { background: var(--accent); color: #fff; border: none; border-radius: 8px;
+    padding: 8px 18px; font-size: 14px; cursor: pointer; }
+  button:disabled { opacity: .5; cursor: wait; }
+  button.ghost { background: transparent; border: 1px solid var(--line); color: var(--fg); padding: 4px 10px; font-size: 12px; }
+  .stats { color: var(--dim); font-size: 13px; margin-bottom: 16px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .card h2 { font-size: 16px; display: flex; align-items: center; gap: 8px; }
+  .tag { font-size: 11px; color: var(--dim); border: 1px solid var(--line); border-radius: 99px; padding: 2px 8px; }
+  .tag.warn { color: #f0b35b; border-color: #6b5326; }
+  .tag.gen { color: #7bd88f; border-color: #2f5c3a; }
+  .desc { color: var(--dim); font-size: 12px; margin: 6px 0 12px; }
+  .sample { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
+  .sample .emo { width: 40px; font-size: 13px; flex: none; }
+  .sample audio { flex: 1; height: 30px; min-width: 0; }
+  .note { font-size: 11px; color: #f0b35b; }
+  .empty { color: var(--dim); padding: 24px; text-align: center; }
+  .rec { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
+  .rec .meta { width: 300px; flex: none; color: var(--dim); font-size: 12px; }
+  .rec .txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .rec audio { width: 220px; height: 30px; }
+  #genStatus, #batchStatus { color: var(--dim); font-size: 13px; }
+  .line-row select.char { width: 130px; }
+  .line-row select.emo { width: 90px; }
+  .line-row input.txt { flex: 1; min-width: 200px; }
+  .scene-head { cursor: pointer; padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px; }
+  .scene-head:hover { color: var(--accent); }
+  .scene-lines { display: none; padding-left: 12px; }
+  .scene-lines.open { display: block; }
+  .char-card { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; flex-wrap: wrap; }
+  .char-card .name { width: 110px; font-weight: bold; }
+  .ok { color: #7bd88f; }
+  .bad { color: #ff7b72; }
+  .hint { color: var(--dim); font-size: 12px; }
+  label.check { color: var(--dim); font-size: 13px; display:flex; gap:6px; align-items:center; }
+</style>
+</head>
+<body>
+<h1>声影 · 音频工作台</h1>
+<div class="sub">角色对白 · VoxCPM2 内置合成 · 生成记录归档 · 音色固化 · 素材库</div>
+
+<div class="panel">
+  <h3>VoxCPM2 运行状态 <button class="ghost" onclick="loadTtsStatus()">刷新</button></h3>
+  <div id="ttsStatus" class="stats" style="margin:0">正在检查环境…</div>
+</div>
+
+<div class="panel">
+  <h3>项目与剧集</h3>
+  <div class="row">
+    <select id="projSelect" style="min-width:160px"><option value="">选择项目…</option></select>
+    <input id="projName" placeholder="新项目名" style="width:140px">
+    <button class="ghost" onclick="createProj()">建项目</button>
+    <span class="stats" style="margin:0">|</span>
+    <select id="epSelect" style="min-width:160px"><option value="">选择剧集（批量生成归属）…</option></select>
+    <input id="epNum" type="number" value="1" min="1" style="width:60px" title="集数">
+    <input id="epName" placeholder="新剧集名" style="width:140px">
+    <button class="ghost" onclick="createEp()">建剧集</button>
+    <span class="stats" style="margin:0">|</span>
+    <button class="ghost" onclick="importPackage()">📦 导入群像资产包</button>
+    <span class="stats" style="margin:0">|</span>
+    <button id="exportBtn" class="ghost" onclick="exportEpisode()" disabled>🎧 导出整集</button>
+    <span id="exportStatus" class="stats" style="margin:0"></span>
+  </div>
+  <div class="row" id="exportPlayer" style="display:none; margin:0">
+    <audio id="exportAudio" controls style="flex:1; height:32px"></audio>
+    <a id="exportDownload" class="stats" href="#" download>下载 wav</a>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>场次对白批量生成 <span class="stats" id="batchEp"></span></h3>
+  <div class="row">
+    <input id="sceneName" placeholder="场次名称，如：第一集·雨夜对峙" style="flex:1; min-width:220px">
+    <button class="ghost" onclick="addLine()">+ 加一行台词</button>
+    <button id="batchBtn" onclick="runBatch()">批量生成</button>
+    <span id="batchStatus"></span>
+  </div>
+  <div id="lineRows"></div>
+</div>
+
+<div class="panel">
+  <h3>场次回放 <button class="ghost" onclick="loadScenes()">刷新</button></h3>
+  <div id="scenes"><div class="empty">暂无场次</div></div>
+</div>
+
+<div class="panel">
+  <h3>角色管理</h3>
+  <div class="row">
+    <input id="charName" placeholder="角色名" style="width:130px">
+    <select id="charVoice"><option value="">绑定音色（必选）</option></select>
+    <select id="charEmotion"><option value="">默认情绪</option></select>
+    <select id="charCloneMode">
+      <option value="auto">克隆模式：自动</option>
+      <option value="ultimate_clone">克隆模式：极致</option>
+      <option value="controllable_clone">克隆模式：可控</option>
+    </select>
+    <input id="charDesc" placeholder="角色简介（可空）" style="flex:1; min-width:160px">
+    <button class="ghost" onclick="createChar()">创建角色</button>
+  </div>
+  <div id="charList"><div class="empty">暂无角色</div></div>
+</div>
+
+<div class="panel">
+  <h3>导入极致克隆音色</h3>
+  <div class="row">
+    <input id="voiceName" placeholder="音色名称" style="width:150px">
+    <select id="voiceGender"><option value="unknown">性别待确认</option><option value="male">男声</option><option value="female">女声</option></select>
+    <select id="voiceEmotion"><option value="平静">平静</option></select>
+    <input id="voiceFile" type="file" accept=".wav,audio/wav" style="flex:1; min-width:220px">
+  </div>
+  <textarea id="voiceTranscript" placeholder="参考音频的精确逐字转录（极致克隆必填；标点也请尽量准确）"></textarea>
+  <div class="row">
+    <input id="voiceDesc" placeholder="音色说明（可选）" style="flex:1; min-width:220px">
+    <input id="voiceLicense" value="authorized" placeholder="授权/许可证" style="width:150px">
+    <label class="check"><input id="voiceConsent" type="checkbox">我确认已获得该声音的使用与克隆授权</label>
+    <button id="voiceImportBtn" onclick="importVoice()">导入音色</button>
+    <span id="voiceImportStatus" class="stats" style="margin:0"></span>
+  </div>
+  <div class="hint">建议使用 5–30 秒、单人、无背景音乐的干净 WAV；导入后角色可直接在批量对白中使用极致克隆。</div>
+</div>
+
+<div class="panel">
+  <h3>单句合成（调试用）</h3>
+  <textarea id="ttsText" placeholder="输入台词；开头加 (音色描述) 即音色设计模式"></textarea>
+  <div class="row">
+    <select id="ttsVoice"><option value="">不使用库内音色</option></select>
+    <select id="ttsEmotion"><option value="">参考样本情绪（默认首个）</option></select>
+    <select id="ttsMode" onchange="updateTtsModeHint()">
+      <option value="auto">模式：自动</option>
+      <option value="ultimate_clone">模式：极致克隆</option>
+      <option value="controllable_clone">模式：可控克隆</option>
+      <option value="design">模式：音色设计</option>
+      <option value="basic">模式：基础 TTS</option>
+    </select>
+    <input id="ttsSeed" type="number" placeholder="seed（留空随机）" style="width:150px">
+    <label class="check">步数 <input id="ttsSteps" type="number" min="4" max="30" value="10" style="width:62px"></label>
+    <label class="check"><input id="ttsNormalize" type="checkbox">文本规范化</label>
+    <label class="check"><input id="ttsDenoise" type="checkbox">参考降噪</label>
+    <button id="ttsBtn" onclick="generate()">生成</button>
+    <span id="genStatus"></span>
+  </div>
+  <textarea id="ttsPromptText" placeholder="极致克隆转录覆盖（通常留空，自动读取音色样本转录）" style="min-height:44px"></textarea>
+  <div id="ttsModeHint" class="hint"></div>
+  <div class="row" id="ttsResult" style="margin-top:10px; display:none">
+    <audio id="ttsAudio" controls style="flex:1"></audio>
+    <span id="ttsMeta" class="stats" style="margin:0"></span>
+  </div>
+</div>
+
+<div class="panel">
+  <h3>生成记录 <button class="ghost" onclick="loadHistory()">刷新</button></h3>
+  <div id="history"><div class="empty">暂无生成记录</div></div>
+</div>
+
+<div class="bar">
+  <input id="q" type="search" placeholder="搜索音色名称或描述…">
+  <select id="gender">
+    <option value="">全部性别</option>
+    <option value="male">男声</option>
+    <option value="female">女声</option>
+    <option value="unknown">待确认</option>
+  </select>
+  <select id="emotion"><option value="">全部情绪</option></select>
+  <span style="flex:1"></span>
+  <input id="sfxCat" placeholder="音效分类" style="width:90px">
+  <input id="sfxUpload" type="file" accept=".wav" style="width:180px">
+  <button class="ghost" onclick="uploadAsset('sfx')">导入音效</button>
+  <input id="ambienceCat" placeholder="环境音分类" style="width:90px">
+  <input id="ambienceUpload" type="file" accept=".wav" style="width:180px">
+  <button class="ghost" onclick="uploadAsset('ambience')">导入环境音</button>
+</div>
+<div class="stats" id="stats"></div>
+<div class="grid" id="grid"></div>
+
+<script>
+const grid = document.getElementById('grid');
+const stats = document.getElementById('stats');
+const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
+let debounce, voiceCache = [], charCache = [], emotionList = [], ambCache = [], sfxCache = [];
+let projCache = [], epCache = [], curEpisode = '';
+
+// ---------- 项目与剧集 ----------
+async function loadProjects() {
+  projCache = (await (await fetch('/api/projects')).json()).items;
+  const sel = document.getElementById('projSelect');
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">选择项目…</option>';
+  projCache.forEach(p => {
+    const o = document.createElement('option');
+    o.value = p.project_id;
+    o.textContent = `${p.name}（${p.episode_count} 集）`;
+    sel.appendChild(o);
+  });
+  sel.value = cur;
+  if (sel.value) loadEpisodes();
+}
+
+async function loadEpisodes() {
+  const pid = document.getElementById('projSelect').value;
+  const sel = document.getElementById('epSelect');
+  const prev = sel.value;
+  sel.innerHTML = '<option value="">选择剧集（批量生成归属）…</option>';
+  epCache = []; curEpisode = ''; updateBatchEp();
+  if (!pid) return;
+  epCache = (await (await fetch(`/api/projects/${pid}/episodes`)).json()).items;
+  epCache.forEach(e => {
+    const o = document.createElement('option');
+    o.value = e.episode_id;
+    o.textContent = `第${e.number}集 · ${e.name}`;
+    sel.appendChild(o);
+  });
+  if (prev && epCache.some(e => e.episode_id === prev)) {
+    sel.value = prev; curEpisode = prev;
+  }
+  updateBatchEp();
+}
+
+function epOrderedScenes(all) {
+  const ep = epCache.find(e => e.episode_id === curEpisode);
+  const mine = all.filter(s => s.episode_id === curEpisode);
+  const ord = (ep && ep.scene_order) || [];
+  return [...mine].sort((a, b) => {
+    const ia = ord.indexOf(a.scene_id), ib = ord.indexOf(b.scene_id);
+    return (ia === -1 ? 9999 : ia) - (ib === -1 ? 9999 : ib) || a.scene_id.localeCompare(b.scene_id);
+  });
+}
+
+async function moveScene(sid, dir, ev) {
+  ev.stopPropagation();
+  const data = (await (await fetch('/api/dialogue/scenes')).json()).items;
+  const arr = epOrderedScenes(data);
+  const i = arr.findIndex(s => s.scene_id === sid);
+  const j = i + dir;
+  if (i < 0 || j < 0 || j >= arr.length) return;
+  [arr[i], arr[j]] = [arr[j], arr[i]];
+  await fetch(`/api/episodes/${curEpisode}/scene_order`, { method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ scene_ids: arr.map(s => s.scene_id) }) });
+  await loadEpisodes();
+  loadScenes();
+}
+
+function updateBatchEp() {
+  const ep = epCache.find(e => e.episode_id === curEpisode);
+  document.getElementById('batchEp').textContent = ep ? `（归属：第${ep.number}集 · ${ep.name}）` : '（未选择剧集，场次将不归属）';
+  document.getElementById('exportBtn').disabled = !curEpisode;
+}
+
+async function exportEpisode() {
+  if (!curEpisode) return;
+  const btn = document.getElementById('exportBtn'), st = document.getElementById('exportStatus');
+  btn.disabled = true; st.textContent = '导出中（未混音的场次会自动补渲染）…';
+  try {
+    const r = await fetch(`/api/episodes/${curEpisode}/export`, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ scene_gap_ms: 1000 }) });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const m = await r.json();
+    st.textContent = `完成 · ${m.scenes.length} 场 · 共 ${m.total_duration_sec}s`;
+    const url = `/api/episodes/${curEpisode}/export/audio?t=${Date.now()}`;
+    document.getElementById('exportAudio').src = url;
+    document.getElementById('exportDownload').href = url;
+    document.getElementById('exportPlayer').style.display = 'flex';
+  } catch (e) { st.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function createProj() {
+  const name = document.getElementById('projName').value.trim();
+  if (!name) { alert('输入项目名'); return; }
+  await fetch('/api/projects', { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }) });
+  document.getElementById('projName').value = '';
+  loadProjects();
+}
+
+async function createEp() {
+  const pid = document.getElementById('projSelect').value;
+  const name = document.getElementById('epName').value.trim();
+  if (!pid || !name) { alert('先选项目，再输入剧集名'); return; }
+  await fetch(`/api/projects/${pid}/episodes`, { method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, number: parseInt(document.getElementById('epNum').value) || 1 }) });
+  document.getElementById('epName').value = '';
+  loadEpisodes(); loadProjects();
+}
+
+async function importPackage() {
+  const path = prompt('资产包目录路径：', 'examples/qunxiang_sample');
+  if (!path) return;
+  const pv = await fetch('/api/import/preview', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+  if (!pv.ok) { alert('预览失败：' + (await pv.json()).detail); return; }
+  const r = await pv.json();
+  const lines = [
+    `项目：${r.project_title}`,
+    `剧集：${r.episodes.map(e => `第${e.number}集 ${e.title}`).join('、')}`,
+    `角色：${r.characters.map(c => c.name).join('、')}`,
+    `台词：共 ${r.line_count} 行`,
+    ...r.characters.map(c => `· ${c.name} → ${c.voice_note}`),
+    ...(r.issues.length ? ['⚠ 异常：', ...r.issues] : []),
+    '', '确认导入？（只建骨架，音频在工作台逐场生成）',
+  ];
+  if (!confirm(lines.join('\n'))) return;
+  const ex = await fetch('/api/import/execute', { method: 'POST',
+    headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ path }) });
+  if (!ex.ok) { alert('导入失败：' + (await ex.json()).detail); return; }
+  const res = await ex.json();
+  alert(`导入完成：项目「${res.project_name}」\n新建场次 ${res.scenes_created.length} 个（草稿）`);
+  loadProjects(); loadChars(); loadScenes();
+}
+
+function fillVoiceSelect(sel, withEmpty) {
+  sel.innerHTML = withEmpty ? '<option value="">不使用库内音色</option>' : '<option value="">绑定音色（必选）</option>';
+  voiceCache.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v.voice_id;
+    const ultimate = v.samples.some(s => !!s.transcript);
+    o.textContent = v.name + (!v.samples.length ? '（缺少音频）' : ultimate ? '（极致）' : '（可控）');
+    sel.appendChild(o);
+  });
+}
+function fillEmotionSelect(sel, label) {
+  sel.innerHTML = `<option value="">${label}</option>`;
+  emotionList.forEach(e => { const o = document.createElement('option'); o.value = o.textContent = e; sel.appendChild(o); });
+}
+
+async function boot() {
+  const s = await (await fetch('/api/library/summary')).json();
+  emotionList = s.emotions;
+  fillEmotionSelect(els.emotion, '全部情绪');
+  fillEmotionSelect(document.getElementById('ttsEmotion'), '参考样本情绪（默认首个）');
+  fillEmotionSelect(document.getElementById('charEmotion'), '默认情绪');
+  fillEmotionSelect(document.getElementById('voiceEmotion'), '参考情绪');
+  voiceCache = (await (await fetch('/api/voices')).json()).items;
+  fillVoiceSelect(document.getElementById('ttsVoice'), true);
+  fillVoiceSelect(document.getElementById('charVoice'), false);
+  ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
+  sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
+  await loadChars();
+  await loadProjects();
+  addLine();
+  load(); loadHistory(); loadScenes(); loadTtsStatus(); updateTtsModeHint();
+}
+
+async function loadTtsStatus() {
+  const box = document.getElementById('ttsStatus');
+  try {
+    const s = await (await fetch('/api/system/tts-status')).json();
+    const a = s.voice_assets;
+    const problems = [];
+    if (!s.voxcpm_installed) problems.push('未安装 voxcpm');
+    if (!s.model_present) problems.push('缺少模型权重');
+    if (!s.cuda_available && s.effective_device !== 'cpu') problems.push('CUDA 不可用（仍可尝试 CPU，但会很慢）');
+    if (a.missing_samples) problems.push(`缺少 ${a.missing_samples} 个参考音频`);
+    box.className = s.ready ? 'stats ok' : 'stats bad';
+    box.textContent = `${s.ready ? '后端依赖就绪' : '尚未就绪'} · 设备 ${s.cuda_device || s.effective_device || s.device}${s.effective_device === 'cpu' ? '（较慢）' : ''} · 极致样本 ${a.ultimate_ready_samples}/${a.declared_samples}`
+      + (problems.length ? ` · ${problems.join('；')}` : '');
+    document.getElementById('ttsDenoise').disabled = !s.denoiser_enabled;
+    if (!s.denoiser_enabled) document.getElementById('ttsDenoise').title = '设置 VOXCPM_LOAD_DENOISER=1 后重启才能启用';
+  } catch (e) {
+    box.className = 'stats bad'; box.textContent = '状态检查失败：' + e.message;
+  }
+}
+
+async function refreshVoices() {
+  voiceCache = (await (await fetch('/api/voices')).json()).items;
+  fillVoiceSelect(document.getElementById('ttsVoice'), true);
+  fillVoiceSelect(document.getElementById('charVoice'), false);
+  await loadChars();
+  await load();
+  updateTtsModeHint();
+}
+
+async function importVoice() {
+  const fileInput = document.getElementById('voiceFile');
+  const name = document.getElementById('voiceName').value.trim();
+  const transcript = document.getElementById('voiceTranscript').value.trim();
+  const status = document.getElementById('voiceImportStatus');
+  if (!name || !transcript || !fileInput.files.length) { alert('音色名称、WAV 和精确转录都必填'); return; }
+  if (!document.getElementById('voiceConsent').checked) { alert('请先确认已获得声音使用授权'); return; }
+  const btn = document.getElementById('voiceImportBtn'); btn.disabled = true; status.textContent = '导入中…';
+  const fd = new FormData();
+  fd.append('file', fileInput.files[0]);
+  fd.append('name', name); fd.append('transcript', transcript);
+  fd.append('gender', document.getElementById('voiceGender').value);
+  fd.append('emotion', document.getElementById('voiceEmotion').value);
+  fd.append('description', document.getElementById('voiceDesc').value.trim());
+  fd.append('license_name', document.getElementById('voiceLicense').value.trim() || 'authorized');
+  fd.append('consent_confirmed', 'true');
+  try {
+    const r = await fetch('/api/voices/import', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const voice = await r.json();
+    status.textContent = `已导入：${voice.name}`;
+    document.getElementById('voiceName').value = '';
+    document.getElementById('voiceTranscript').value = '';
+    document.getElementById('voiceDesc').value = '';
+    document.getElementById('voiceFile').value = '';
+    document.getElementById('voiceConsent').checked = false;
+    await refreshVoices(); await loadTtsStatus();
+  } catch (e) { status.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function uploadAsset(kind) {
+  const input = document.getElementById(kind + 'Upload');
+  if (!input.files.length) { alert('请先选择 wav 文件'); return; }
+  const fd = new FormData();
+  fd.append('file', input.files[0]);
+  const cat = document.getElementById(kind + 'Cat').value.trim() || '未分类';
+  const r = await fetch(`/api/assets/${kind}/upload?category=${encodeURIComponent(cat)}`, { method: 'POST', body: fd });
+  if (r.ok) {
+    ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
+    sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
+    alert('导入成功');
+    input.value = ''; load();
+  } else alert('失败：' + (await r.json()).detail);
+}
+
+// ---------- 角色管理 ----------
+async function loadChars() {
+  charCache = (await (await fetch('/api/characters')).json()).items;
+  const box = document.getElementById('charList');
+  if (!charCache.length) { box.innerHTML = '<div class="empty">暂无角色</div>'; return; }
+  box.innerHTML = '';
+  for (const c of charCache) {
+    const v = voiceCache.find(x => x.voice_id === c.voice_id);
+    const row = document.createElement('div'); row.className = 'char-card';
+    row.innerHTML = `<span class="name">${c.name}</span>
+      <span class="tag">${v ? v.name : '未绑定音色'}</span>
+      <span class="tag">${c.clone_mode || 'auto'}</span>
+      ${c.default_emotion ? `<span class="tag">默认:${c.default_emotion}</span>` : ''}
+      <span class="desc" style="margin:0">${c.description || ''}</span>`;
+    const del = document.createElement('button');
+    del.className = 'ghost'; del.textContent = '删除';
+    del.onclick = async () => { if (confirm(`删除角色 ${c.name}？`)) { await fetch('/api/characters/' + c.char_id, { method: 'DELETE' }); loadChars(); } };
+    row.appendChild(del);
+    box.appendChild(row);
+  }
+}
+
+async function createChar() {
+  const name = document.getElementById('charName').value.trim();
+  const voice_id = document.getElementById('charVoice').value;
+  if (!name || !voice_id) { alert('角色名和绑定音色必填'); return; }
+  const r = await fetch('/api/characters', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name, voice_id,
+      default_emotion: document.getElementById('charEmotion').value,
+      clone_mode: document.getElementById('charCloneMode').value,
+      description: document.getElementById('charDesc').value }),
+  });
+  if (r.ok) { document.getElementById('charName').value = ''; document.getElementById('charDesc').value = ''; loadChars(); }
+  else alert('失败：' + (await r.json()).detail);
+}
+
+// ---------- 场次批量生成 ----------
+function addLine() {
+  const box = document.getElementById('lineRows');
+  const row = document.createElement('div');
+  row.className = 'row line-row';
+  const cs = document.createElement('select'); cs.className = 'char';
+  cs.innerHTML = '<option value="">选择角色</option>';
+  charCache.forEach(c => { const o = document.createElement('option'); o.value = c.char_id; o.textContent = c.name; cs.appendChild(o); });
+  const es = document.createElement('select'); es.className = 'emo';
+  fillEmotionSelect(es, '情绪');
+  const txt = document.createElement('input'); txt.className = 'txt'; txt.placeholder = '台词…';
+  const del = document.createElement('button'); del.className = 'ghost'; del.textContent = '×';
+  del.onclick = () => row.remove();
+  row.append(cs, es, txt, del);
+  box.appendChild(row);
+}
+
+async function runBatch() {
+  const scene_name = document.getElementById('sceneName').value.trim() || '未命名场次';
+  const lines = [...document.querySelectorAll('#lineRows .line-row')].map(r => ({
+    character_id: r.querySelector('.char').value,
+    emotion: r.querySelector('.emo').value,
+    text: r.querySelector('.txt').value.trim(),
+  })).filter(l => l.character_id && l.text);
+  if (!lines.length) { alert('请至少填写一行完整的台词（角色 + 文本）'); return; }
+  const btn = document.getElementById('batchBtn'), st = document.getElementById('batchStatus');
+  btn.disabled = true;
+  st.textContent = `合成中（${lines.length} 行，每行约 10–40 秒，请勿关闭页面）…`;
+  try {
+    const r = await fetch('/api/dialogue/batch', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scene_name, lines, episode_id: curEpisode }),
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const scene = await r.json();
+    st.textContent = `完成：${scene.line_count} 行已生成`;
+    loadScenes(); loadHistory();
+  } catch (e) { st.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function loadScenes() {
+  const data = (await (await fetch('/api/dialogue/scenes')).json()).items;
+  const box = document.getElementById('scenes');
+  if (!data.length) { box.innerHTML = '<div class="empty">暂无场次</div>'; return; }
+  box.innerHTML = '';
+  const ordMap = {};
+  if (curEpisode) epOrderedScenes(data).forEach((s, i) => ordMap[s.scene_id] = i + 1);
+  for (const s of data) {
+    const head = document.createElement('div');
+    head.className = 'scene-head';
+    const epTag = s.episode_name ? `【${s.episode_name}】` : '【未归属】';
+    head.textContent = `🎬 ${ordMap[s.scene_id] ? '#' + ordMap[s.scene_id] + ' ' : ''}${epTag}${s.name} · ${s.line_count} 行 · ${s.created_at}${s.has_mix ? ' · 已混音' : ''}${s.draft ? ' · 草稿' : ''}`;
+    if (ordMap[s.scene_id]) {
+      const mk = (label, dir) => {
+        const b = document.createElement('button');
+        b.className = 'ghost'; b.textContent = label;
+        b.style.cssText = 'margin-left:6px;padding:0 6px';
+        b.onclick = ev => moveScene(s.scene_id, dir, ev);
+        return b;
+      };
+      head.appendChild(mk('↑', -1));
+      head.appendChild(mk('↓', 1));
+    }
+    if (!s.episode_id && epCache.length) {
+      const assign = document.createElement('select');
+      assign.style.cssText = 'margin-left:10px; font-size:12px; padding:2px 6px';
+      assign.innerHTML = '<option value="">分配到剧集…</option>';
+      epCache.forEach(e => { const o = document.createElement('option'); o.value = e.episode_id; o.textContent = `第${e.number}集 · ${e.name}`; assign.appendChild(o); });
+      assign.onclick = ev => ev.stopPropagation();
+      assign.onchange = async () => {
+        if (!assign.value) return;
+        await fetch(`/api/dialogue/scenes/${s.scene_id}/assign`, { method: 'POST',
+          headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ episode_id: assign.value }) });
+        loadScenes();
+      };
+      head.appendChild(assign);
+    }
+    const detail = document.createElement('div');
+    detail.className = 'scene-lines';
+    head.onclick = async () => {
+      if (!detail.dataset.loaded) {
+        const sc = await (await fetch('/api/dialogue/scenes/' + s.scene_id)).json();
+        for (const l of sc.lines) {
+          const row = document.createElement('div'); row.className = 'rec';
+          const audioHtml = l.record_id
+            ? `<audio controls preload="none" src="/api/tts/records/${l.record_id}/audio"></audio>`
+            : '<span class="tag warn">待生成</span>';
+          row.innerHTML = `<span class="meta">${l.character_name}${l.emotion ? ' · ' + l.emotion : ''}</span>
+            <span class="txt">${l.text}</span>${audioHtml}`;
+          detail.appendChild(row);
+        }
+        if (sc.draft) {
+          const genRow = document.createElement('div'); genRow.className = 'row';
+          const genBtn = document.createElement('button');
+          genBtn.textContent = `生成全部台词（${sc.lines.filter(l => !l.record_id).length} 行）`;
+          genBtn.onclick = async () => {
+            genBtn.disabled = true; genBtn.textContent = '生成中…';
+            try {
+              const r = await fetch(`/api/dialogue/scenes/${s.scene_id}/generate`, { method: 'POST' });
+              if (!r.ok) throw new Error((await r.json()).detail || r.status);
+              detail.dataset.loaded = ''; detail.innerHTML = '';
+              head.onclick(); detail.classList.add('open'); loadScenes(); loadHistory();
+            } catch (e) { alert('失败：' + e.message); genBtn.disabled = false; genBtn.textContent = '重试生成'; }
+          };
+          genRow.appendChild(genBtn);
+          detail.appendChild(genRow);
+        } else {
+          detail.appendChild(buildMixPanel(s.scene_id, sc.mix));
+        }
+        detail.dataset.loaded = '1';
+      }
+      detail.classList.toggle('open');
+    };
+    box.append(head, detail);
+  }
+}
+
+// ---------- 混音面板 ----------
+function buildMixPanel(sceneId, existingMix) {
+  const wrap = document.createElement('div');
+  wrap.style.cssText = 'border-top:1px solid var(--line); margin-top:8px; padding-top:10px';
+  const ambOpts = ['<option value="">无环境音</option>']
+    .concat(ambCache.map(a => `<option value="${a.id}">${a.category}/${a.name}</option>`)).join('');
+  const sfxOpts = ['<option value="">不加音效</option>']
+    .concat(sfxCache.map(x => `<option value="${x.id}">${x.category}/${x.name}</option>`)).join('');
+  wrap.innerHTML = `<div class="row">
+      <span class="stats" style="margin:0">行间隔</span>
+      <input class="mix-gap" type="number" value="${existingMix ? existingMix.config.gap_ms : 500}" style="width:80px">
+      <span class="stats" style="margin:0">ms</span>
+      <select class="mix-amb">${ambOpts}</select>
+      <span class="stats" style="margin:0">环境音量</span>
+      <input class="mix-ambvol" type="number" step="0.1" min="0" max="1" value="${existingMix && existingMix.config.ambience ? existingMix.config.ambience.volume : 0.4}" style="width:70px">
+      <select class="mix-sfx">${sfxOpts}</select>
+      <span class="stats" style="margin:0">在第</span>
+      <input class="mix-sfxline" type="number" value="1" min="1" style="width:56px">
+      <span class="stats" style="margin:0">行</span>
+      <button class="ghost mix-btn">生成混音</button>
+      <span class="stats mix-status" style="margin:0"></span>
+    </div>
+    <div class="row mix-players" style="display:${existingMix ? 'flex' : 'none'}">
+      <span class="stats" style="margin:0">混音</span>
+      <audio controls preload="none" src="/api/dialogue/scenes/${sceneId}/mix/audio/mix" style="flex:1; height:30px"></audio>
+      <span class="stats" style="margin:0">纯对白</span>
+      <audio controls preload="none" src="/api/dialogue/scenes/${sceneId}/mix/audio/dialogue" style="flex:1; height:30px"></audio>
+    </div>`;
+  wrap.querySelector('.mix-btn').onclick = async () => {
+    const btn = wrap.querySelector('.mix-btn'), st = wrap.querySelector('.mix-status');
+    btn.disabled = true; st.textContent = '渲染中…';
+    const ambId = wrap.querySelector('.mix-amb').value;
+    const sfxId = wrap.querySelector('.mix-sfx').value;
+    try {
+      const r = await fetch(`/api/dialogue/scenes/${sceneId}/mix`, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          gap_ms: parseInt(wrap.querySelector('.mix-gap').value) || 500,
+          ambience: ambId ? { id: ambId, volume: parseFloat(wrap.querySelector('.mix-ambvol').value) || 0.4 } : null,
+          sfx: sfxId ? [{ id: sfxId, at_line: (parseInt(wrap.querySelector('.mix-sfxline').value) || 1) - 1, volume: 0.8 }] : [],
+        }),
+      });
+      if (!r.ok) throw new Error((await r.json()).detail || r.status);
+      const mix = await r.json();
+      st.textContent = `完成 · ${mix.duration_sec}s`;
+      const players = wrap.querySelector('.mix-players');
+      players.style.display = 'flex';
+      players.querySelectorAll('audio').forEach(a => { const src = a.src.split('?')[0]; a.src = src + '?t=' + Date.now(); a.load(); });
+    } catch (e) { st.textContent = '失败：' + e.message; }
+    finally { btn.disabled = false; }
+  };
+  return wrap;
+}
+
+// ---------- 素材库 ----------
+async function load() {
+  const p = new URLSearchParams({ q: els.q.value, gender: els.gender.value, emotion: els.emotion.value });
+  const [summary, data] = await Promise.all([
+    fetch('/api/library/summary').then(r => r.json()),
+    fetch('/api/voices?' + p).then(r => r.json()),
+  ]);
+  stats.textContent = `音色 ${summary.voices} 种 · 样本 ${summary.voice_samples} 条 · 音效 ${summary.sfx} · 环境音 ${summary.ambience}`;
+  grid.innerHTML = '';
+  if (!data.items.length) { grid.innerHTML = '<div class="empty">没有匹配的音色</div>'; return; }
+  for (const v of data.items) {
+    const card = document.createElement('div'); card.className = 'card';
+    const genderText = { male: '男声', female: '女声', unknown: '待确认' }[v.gender] || v.gender;
+    const warn = v.known_issues.length ? `<span class="tag warn">${v.known_issues.length} 条待复核</span>` : '';
+    const ultimateCount = v.samples.filter(s => !!s.transcript).length;
+    const gen = !v.samples.length ? '<span class="tag warn">缺少音频</span>'
+      : ultimateCount ? `<span class="tag gen">极致 ${ultimateCount}</span>` : '<span class="tag">可控克隆</span>';
+    card.innerHTML = `<h2>${v.name} <span class="tag">${genderText}</span> <span class="tag">${v.version}</span> ${gen} ${warn}</h2>
+      <div class="desc">${v.description || ''} · ${v.voice_id}</div>`;
+    for (const s of v.samples) {
+      const row = document.createElement('div'); row.className = 'sample';
+      const note = (s.notes && s.notes.length) ? ` <span class="note" title="${s.notes.join('；')}">⚠</span>` : '';
+      const mode = s.transcript ? '<span class="tag gen">极致</span>' : '<span class="tag">可控</span>';
+      row.innerHTML = `<span class="emo">${s.emotion}${note}</span>${mode}<audio controls preload="none" src="${s.url}"></audio>`;
+      card.appendChild(row);
+    }
+    grid.appendChild(card);
+  }
+}
+
+// ---------- 单句合成与生成记录 ----------
+function updateTtsModeHint() {
+  const mode = document.getElementById('ttsMode').value;
+  const voice = voiceCache.find(v => v.voice_id === document.getElementById('ttsVoice').value);
+  const emotion = document.getElementById('ttsEmotion').value;
+  const sample = voice && (voice.samples.find(s => !emotion || s.emotion === emotion) || voice.samples[0]);
+  let msg = {
+    auto: '自动模式：有精确转录的音色优先走极致克隆，否则走可控克隆。',
+    ultimate_clone: '极致克隆：参考音频 + 精确转录，最大化还原音色、节奏和风格；括号风格指令会被忽略。',
+    controllable_clone: '可控克隆：只提取参考音色，可在台词开头用括号控制情绪或语速。',
+    design: '音色设计：不使用参考音频，请在台词开头写（音色描述）。',
+    basic: '基础 TTS：不绑定固定音色。',
+  }[mode];
+  if (sample) msg += sample.transcript ? ` 当前样本已有转录：${sample.transcript}` : ' 当前样本没有转录，只能使用可控克隆或手工填写转录覆盖。';
+  document.getElementById('ttsModeHint').textContent = msg;
+}
+
+async function generate() {
+  const text = document.getElementById('ttsText').value.trim();
+  if (!text) return;
+  const btn = document.getElementById('ttsBtn'), status = document.getElementById('genStatus');
+  btn.disabled = true;
+  status.textContent = '合成中（首次需加载模型约 15–30s）…';
+  const seedRaw = document.getElementById('ttsSeed').value;
+  try {
+    const r = await fetch('/api/tts/generate', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        text, voice_id: document.getElementById('ttsVoice').value,
+        emotion: document.getElementById('ttsEmotion').value,
+        mode: document.getElementById('ttsMode').value,
+        prompt_text: document.getElementById('ttsPromptText').value.trim(),
+        normalize: document.getElementById('ttsNormalize').checked,
+        denoise: document.getElementById('ttsDenoise').checked,
+        seed: seedRaw === '' ? null : parseInt(seedRaw),
+        inference_timesteps: parseInt(document.getElementById('ttsSteps').value),
+      }),
+    });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const rec = await r.json();
+    const box = document.getElementById('ttsResult');
+    box.style.display = 'flex';
+    document.getElementById('ttsAudio').src = `/api/tts/records/${rec.record_id}/audio`;
+    document.getElementById('ttsMeta').textContent = `${rec.mode} · ${rec.duration_sec}s · seed=${rec.seed}`;
+    status.textContent = '完成';
+    loadHistory();
+  } catch (e) { status.textContent = '失败：' + e.message; }
+  finally { btn.disabled = false; }
+}
+
+async function loadHistory() {
+  const data = await (await fetch('/api/tts/records')).json();
+  const box = document.getElementById('history');
+  if (!data.items.length) { box.innerHTML = '<div class="empty">暂无生成记录</div>'; return; }
+  box.innerHTML = '';
+  for (const r of data.items.slice(0, 20)) {
+    const row = document.createElement('div'); row.className = 'rec';
+    row.innerHTML = `<span class="meta">${r.created_at}<br>${r.mode} · seed=${r.seed} · ${r.duration_sec}s${r.source_sample_id ? '<br>样本 ' + r.source_sample_id : ''}</span>
+      <span class="txt" title="${r.text}">${r.text}</span>
+      <audio controls preload="none" src="/api/tts/records/${r.record_id}/audio"></audio>`;
+    const btn = document.createElement('button');
+    btn.className = 'ghost'; btn.textContent = '固化为音色';
+    btn.onclick = () => promote(r.record_id);
+    row.appendChild(btn);
+    box.appendChild(row);
+  }
+}
+
+async function promote(rid) {
+  const name = prompt('输入固化后的音色名称（如：沙哑老者）：');
+  if (!name) return;
+  const r = await fetch(`/api/tts/records/${rid}/promote`, {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ name }),
+  });
+  if (r.ok) { alert('已固化入音色库'); location.reload(); }
+  else alert('失败：' + (await r.json()).detail);
+}
+
+for (const el of Object.values(els)) {
+  el.addEventListener('input', () => { clearTimeout(debounce); debounce = setTimeout(load, 250); });
+}
+document.getElementById('projSelect').addEventListener('change', loadEpisodes);
+document.getElementById('epSelect').addEventListener('change', e => { curEpisode = e.target.value; updateBatchEp(); loadScenes(); });
+document.getElementById('ttsVoice').addEventListener('change', updateTtsModeHint);
+document.getElementById('ttsEmotion').addEventListener('change', updateTtsModeHint);
+boot();
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "id": "scene_alley_night",
+  "name": "雨夜巷口",
+  "location": "老城巷子",
+  "time": "深夜",
+  "mood": "压抑、悬疑",
+  "ambience_hint": { "tags": ["雨声", "夜", "城市远景"], "suggested_category": "天气" },
+  "sfx_hints": [
+    { "tag": "雷声", "timing": "开场" },
+    { "tag": "脚步踩水", "timing": "小铃入场" }
+  ]
+}

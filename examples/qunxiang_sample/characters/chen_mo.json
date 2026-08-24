@@ -1,0 +1,15 @@
+{
+  "id": "char_chen_mo",
+  "name": "陈默",
+  "gender": "male",
+  "age": "老年",
+  "personality": ["沉默", "固执", "重情"],
+  "appearance": "清瘦，灰白短发，常年一件旧雨衣",
+  "voice_hint": {
+    "description": "低沉沙哑的老年男声，语速慢",
+    "reference_style": "低沉男声",
+    "gender": "male",
+    "age_group": "old"
+  },
+  "notes": "主角，全剧情绪起伏集中在第三集"
+}

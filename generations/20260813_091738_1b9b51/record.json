@@ -1,0 +1,18 @@
+{
+  "record_id": "20260813_091738_1b9b51",
+  "created_at": "2026-08-13 09:17:38",
+  "sample_rate": 48000,
+  "duration_sec": 1.6,
+  "review_status": "pending",
+  "text": "那您等到他了吗？",
+  "mode": "clone",
+  "voice_id": "v_loli",
+  "emotion": "悲伤",
+  "seed": 484969000,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "reference_wav_path": "D:\\YH\\ShengYing\\assets\\voices\\v_loli\\samples\\02_悲伤.wav",
+  "scene_id": "20260813_091612_ee61",
+  "character_id": "c_e8e0d7ef",
+  "line_index": 2
+}

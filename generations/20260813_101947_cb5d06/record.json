@@ -1,0 +1,18 @@
+{
+  "record_id": "20260813_101947_cb5d06",
+  "created_at": "2026-08-13 10:19:47",
+  "sample_rate": 48000,
+  "duration_sec": 1.92,
+  "review_status": "pending",
+  "text": "……小孩子别问那么多。",
+  "mode": "clone",
+  "voice_id": "v_low_male",
+  "emotion": "严肃",
+  "seed": 1654416099,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "reference_wav_path": "D:\\YH\\ShengYing\\assets\\voices\\v_low_male\\samples\\08_严肃.wav",
+  "scene_id": "20260813_101855_465f",
+  "character_id": "c_3d9cc358",
+  "line_index": 4
+}

@@ -1,0 +1,18 @@
+{
+  "record_id": "20260813_094954_78e420",
+  "created_at": "2026-08-13 09:49:54",
+  "sample_rate": 48000,
+  "duration_sec": 2.4,
+  "review_status": "pending",
+  "text": "雨下大了，进来躲躲吧。",
+  "mode": "clone",
+  "voice_id": "v_gen_09530532b5bf",
+  "emotion": "平静",
+  "seed": 1141448086,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "reference_wav_path": "D:\\YH\\ShengYing\\assets\\voices\\v_low_male\\samples\\03_愤怒.wav",
+  "scene_id": "20260813_094919_1397",
+  "character_id": "c_56ea2cb8",
+  "line_index": 0
+}

@@ -1,0 +1,86 @@
+{
+  "voice_id": "v_loli",
+  "name": "萝莉音",
+  "mode": "reference_samples",
+  "gender": "female",
+  "description": "年幼女童声",
+  "language": "zh",
+  "emotions": [
+    "开心",
+    "悲伤",
+    "愤怒",
+    "惊讶",
+    "平静",
+    "紧张",
+    "温柔",
+    "严肃",
+    "调皮",
+    "疲惫"
+  ],
+  "samples": [
+    {
+      "file": "samples/01_开心.wav",
+      "emotion": "开心",
+      "source_file": "01_开心.wav",
+      "transcript": "太好了，这真是个天大的好消息啊。我等这一天等了太久了，真的太开心了。"
+    },
+    {
+      "file": "samples/02_悲伤.wav",
+      "emotion": "悲伤",
+      "source_file": "02_悲伤.wav",
+      "transcript": "哎，我真的很难过，为什么事情会变成这样呢？我已经尽力了，可还是不行。"
+    },
+    {
+      "file": "samples/03_愤怒.wav",
+      "emotion": "愤怒",
+      "source_file": "03_愤怒.wav",
+      "transcript": "太过分了，我实在忍无可忍。这件事你必须给我一个交代，否则这事没完。"
+    },
+    {
+      "file": "samples/04_惊讶.wav",
+      "emotion": "惊讶",
+      "source_file": "04_惊讶.wav",
+      "transcript": "天呐，这怎么可能我简直不敢相信自己的眼睛，这也太不可思议了吧。"
+    },
+    {
+      "file": "samples/05_平静.wav",
+      "emotion": "平静",
+      "source_file": "05_平静.wav",
+      "transcript": "好的，我知道了，就这样吧，一切都是最好的安排，顺其自然就好。"
+    },
+    {
+      "file": "samples/06_紧张.wav",
+      "emotion": "紧张",
+      "source_file": "06_紧张.wav",
+      "transcript": "怎么办怎么办？马上就要轮到我了，我的心跳的好快，感觉快要喘不过气来了。"
+    },
+    {
+      "file": "samples/07_温柔.wav",
+      "emotion": "温柔",
+      "source_file": "07_温柔.wav",
+      "transcript": "没关系的，有我在呢，一切都会好起来的。你要相信我，也要相信你自己。"
+    },
+    {
+      "file": "samples/08_严肃.wav",
+      "emotion": "严肃",
+      "source_file": "08_严肃.wav",
+      "transcript": "各位，这件事关系重大，请务必认真对待，绝不能有丝毫马虎和懈怠。"
+    },
+    {
+      "file": "samples/09_调皮.wav",
+      "emotion": "调皮",
+      "source_file": "09_调皮.wav",
+      "transcript": "嘿，猜猜我是谁呀？就不告诉你来追我呀，追到了就给你糖吃。"
+    },
+    {
+      "file": "samples/10_疲惫.wav",
+      "emotion": "疲惫",
+      "source_file": "10_疲惫.wav",
+      "transcript": "呼，今天真是累坏了，从早忙到晚连口水都没顾上喝，终于可以歇一歇了。"
+    }
+  ],
+  "bound_characters": [],
+  "license": "original",
+  "version": "v1.1",
+  "created_at": "2026-08-03"
+}

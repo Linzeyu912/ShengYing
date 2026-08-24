@@ -1,0 +1,128 @@
+Source-Available Non-Commercial License
+
+Copyright (c) 2026 [Project Copyright Holder]
+All rights reserved except as expressly granted below.
+
+This is a custom source-available license. It is not an open-source license.
+
+1. Definitions
+
+"Source" means the source code, documentation, assets, and other materials
+provided with this License.
+
+"Derivative Work" means any modification, adaptation, translation, extension,
+arrangement, or other work based on the Source.
+
+"Non-Commercial Use" means use that is not primarily intended for or directed
+toward commercial advantage or monetary compensation. Non-Commercial Use
+includes reading, learning, research, reference, inspiration, hobby projects,
+and private, personal, or internal self-use, provided that the Source or a
+Derivative Work is not used to provide, support, market, or monetize a
+commercial product or service and is not deployed in a customer-facing or
+revenue-generating environment.
+
+"Commercial Use" means any use primarily intended for or directed toward
+commercial advantage or monetary compensation, whether or not revenue or
+profit is actually received.
+
+2. Non-Commercial License Grant
+
+Subject to this License, [Project Copyright Holder] (the "Copyright Holder")
+grants you a worldwide, royalty-free, non-exclusive license to do the following
+solely for Non-Commercial Use:
+
+(a) access, download, copy, view, read, inspect, study, and learn from the
+    Source;
+(b) reference the Source and use it for inspiration;
+(c) run, evaluate, and deploy the Source privately, personally, or internally
+    for self-use;
+(d) modify, adapt, translate, and create Derivative Works;
+(e) incorporate or reuse the Source or Derivative Works in other
+    non-commercial projects; and
+(f) publish and redistribute copies of the Source or Derivative Works at no
+    charge, subject to Section 3.
+
+No right is granted for Commercial Use except through prior written permission
+under Section 5.
+
+3. Conditions for Redistribution
+
+You may redistribute the Source or a Derivative Work for Non-Commercial Use
+only if you:
+
+(a) provide it without charge or other monetary consideration;
+(b) include this License and the above copyright notice with every copy;
+(c) clearly identify any material changes you made;
+(d) do not state or imply that the Copyright Holder endorses you or your work;
+    and
+(e) do not impose terms that permit Commercial Use or prevent recipients from
+    exercising the non-commercial rights granted by this License.
+
+Each recipient receives the rights in Section 2 directly from the Copyright
+Holder, subject to this License.
+
+4. Commercial Uses Prohibited Without Permission
+
+Without the Copyright Holder's prior written permission, you may not:
+
+(a) use the Source or any Derivative Work for a Commercial Use;
+(b) sell, rent, license for a fee, or offer paid access to the Source or any
+    Derivative Work;
+(c) monetize the Source or any Derivative Work, directly or indirectly,
+    including through subscriptions, advertising, sponsorships, or paid
+    features;
+(d) use the Source or any Derivative Work to provide a paid, hosted, consulting,
+    support, or other commercial service;
+(e) deploy the Source or any Derivative Work in a customer-facing,
+    revenue-producing, or other commercial production environment; or
+(f) include the Source or any Derivative Work in, or use it to create, operate,
+    support, or market, any commercial product or service.
+
+Use by a commercial organization is not automatically prohibited when it is
+strictly internal self-use that satisfies the definition of Non-Commercial Use
+and does not fall within any activity listed above.
+
+5. Written Permission for Commercial Use
+
+Any Commercial Use or other exception to this License requires the Copyright
+Holder's express prior written permission. That permission must identify the
+authorized use and may require a separate commercial license, fee, or other
+terms. Silence, repository access, contribution, or failure to enforce a term
+does not constitute permission or waiver.
+
+6. Ownership and Reserved Rights
+
+The Source is proprietary. The Copyright Holder retains all title, copyright,
+and other intellectual property rights in and to the Source. No patent,
+trademark, trade-secret, publicity, or other right is granted by implication,
+estoppel, or otherwise. All rights not expressly granted are reserved.
+
+7. Termination
+
+Your rights under this License terminate automatically and immediately if you
+violate any term. Upon termination, you must stop using and distributing the
+Source and Derivative Works and delete copies in your possession or control,
+except to the extent retention is required by law. Termination of your rights
+does not terminate the rights of recipients who remain in compliance.
+
+8. Disclaimer of Warranty
+
+THE SOURCE IS PROVIDED "AS IS" AND "AS AVAILABLE," WITHOUT WARRANTY OF ANY
+KIND, EXPRESS OR IMPLIED, INCLUDING, WITHOUT LIMITATION, WARRANTIES OF
+MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, NON-INFRINGEMENT,
+ACCURACY, OR RELIABILITY. YOU ASSUME ALL RISK ARISING FROM ACCESS TO OR USE OF
+THE SOURCE.
+
+9. Limitation of Liability
+
+TO THE MAXIMUM EXTENT PERMITTED BY LAW, THE COPYRIGHT HOLDER AND CONTRIBUTORS
+WILL NOT BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY,
+CONSEQUENTIAL, OR OTHER DAMAGES, OR FOR ANY LOSS OF DATA, PROFITS, REVENUE,
+BUSINESS, OR GOODWILL, ARISING OUT OF OR RELATED TO THE SOURCE OR THIS LICENSE,
+EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGES.
+
+10. Severability
+
+If any provision of this License is held unenforceable, that provision will be
+enforced to the maximum extent permitted, and the remaining provisions will
+remain in effect.

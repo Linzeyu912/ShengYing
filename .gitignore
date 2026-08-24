@@ -1,0 +1,44 @@
+# 音频素材本体（体积大，不入 git；元数据与目录结构保留）
+assets/voices/*/samples/*.wav
+# LoRA 权重（体积大，不入 git；元数据 voice.json 保留）
+assets/voices/*/lora/
+assets/archive/**/*.wav
+assets/sfx/**/*.wav
+assets/ambience/**/*.wav
+
+# 模型权重（如后续内置 VoxCPM）
+models/
+
+# 第三方源码（各自持有上游 git 仓库，本地研究用）
+third_party/
+
+# 离线安装包（大体积 whl，本地留存方便团队复用）
+packages/
+
+# 测试与生成输出
+outputs/
+
+# 生成记录：音频不入 git，元数据 record.json 保留追溯
+generations/*/audio.wav
+
+# 场次混音产物：音频不入 git，混音配置（scene.json）保留
+scenes/*/mix.wav
+scenes/*/dialogue.wav
+
+# 整集导出音频：不入 git，导出清单（export.json）保留
+projects/**/*.wav
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# 系统文件
+Thumbs.db
+.DS_Store
+
+# 音效素材待入库目录（大体积 mp3，不入 git）
+工作场景/
+
+# 导入时生成的 voice.json 临时备份
+assets/voices/_backup_voicejson/

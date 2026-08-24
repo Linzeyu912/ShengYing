@@ -1,0 +1,22 @@
+{
+  "episode_id": "e_2414c703",
+  "episode_name": "巷口相遇",
+  "project_id": "p_2532831b",
+  "exported_at": "2026-08-13 11:16:00",
+  "scene_gap_ms": 1000,
+  "total_duration_sec": 14.7,
+  "scenes": [
+    {
+      "scene_id": "20260813_094919_1397",
+      "name": "第一场·屋檐下",
+      "source": "mix",
+      "duration_sec": 4.66
+    },
+    {
+      "scene_id": "20260813_091612_ee61",
+      "name": "测试场·巷口相遇",
+      "source": "mix",
+      "duration_sec": 9.04
+    }
+  ]
+}

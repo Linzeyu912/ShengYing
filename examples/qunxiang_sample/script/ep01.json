@@ -1,0 +1,18 @@
+{
+  "episode_id": "ep01",
+  "number": 1,
+  "title": "巷口相遇",
+  "scenes": [
+    {
+      "scene_ref": "scene_alley_night",
+      "name": "第一场·屋檐下",
+      "lines": [
+        { "character_ref": "char_chen_mo", "text": "雨下大了，进来躲躲吧。", "emotion": "平静" },
+        { "character_ref": "char_xiao_ling", "text": "谢谢爷爷！您的雨衣都湿透了。", "emotion": "开心" },
+        { "character_ref": "char_chen_mo", "text": "习惯了。二十年了，每年的今天都下雨。", "emotion": "疲惫" },
+        { "character_ref": "char_xiao_ling", "text": "爷爷，您在等人吗？", "emotion": "惊讶" },
+        { "character_ref": "char_chen_mo", "text": "……小孩子别问那么多。", "emotion": "严肃" }
+      ]
+    }
+  ]
+}

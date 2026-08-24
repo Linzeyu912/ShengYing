@@ -1,0 +1,18 @@
+{
+  "record_id": "20260813_101944_50adaa",
+  "created_at": "2026-08-13 10:19:44",
+  "sample_rate": 48000,
+  "duration_sec": 2.4,
+  "review_status": "pending",
+  "text": "爷爷，您在等人吗？",
+  "mode": "clone",
+  "voice_id": "v_loli",
+  "emotion": "惊讶",
+  "seed": 1815314305,
+  "cfg_value": 2.0,
+  "inference_timesteps": 10,
+  "reference_wav_path": "D:\\YH\\ShengYing\\assets\\voices\\v_loli\\samples\\04_惊讶.wav",
+  "scene_id": "20260813_101855_465f",
+  "character_id": "c_df4483fc",
+  "line_index": 3
+}

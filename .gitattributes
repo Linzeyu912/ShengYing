@@ -1,0 +1,15 @@
+# 产品仓默认不保存原始媒体；确需长期随代码分发的最小回归夹具走 Git LFS。
+tests/fixtures/**/*.wav filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/**/*.mp3 filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/**/*.mp4 filter=lfs diff=lfs merge=lfs -text
+tests/fixtures/**/*.zip filter=lfs diff=lfs merge=lfs -text
+
+# 正式说明的二进制原件由 LFS 保存，Markdown 版保留普通 Git。
+docs/**/*.doc filter=lfs diff=lfs merge=lfs -text
+docs/**/*.docx filter=lfs diff=lfs merge=lfs -text
+docs/**/*.pdf filter=lfs diff=lfs merge=lfs -text
+docs/**/*.ppt filter=lfs diff=lfs merge=lfs -text
+docs/**/*.pptx filter=lfs diff=lfs merge=lfs -text
+docs/**/*.xls filter=lfs diff=lfs merge=lfs -text
+docs/**/*.xlsx filter=lfs diff=lfs merge=lfs -text
+docs/**/*.zip filter=lfs diff=lfs merge=lfs -text

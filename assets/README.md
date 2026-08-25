@@ -16,7 +16,7 @@ assets/
 ├── sfx/                    # 音效库（待补充）
 ├── ambience/               # 环境音库（待补充）
 └── archive/
-    └── voices_v1.0/        # 组员交付的 v1.0 原始版，原样保留可追溯
+    └── voices_v1.0/        # v1.0 原始版，原样保留以便追溯
 ```
 
 ## 当前音色清单（v1.1，共 9 种音色 × 10 种情绪）
@@ -41,7 +41,7 @@ assets/
   导入时已规范化并在 `voice.json` 的 `notes` 中保留溯源信息。
 - 「bug」标记表示交付方认为该样本仍有问题，已记录在 `voice.json` 的
   `known_issues` 中，制作使用前应人工复核。
-- 所有音色为组员原创录制，`license: original`。
+- 所有音色均由 Linzeyu 原创录制，`license: original`。
 
 ## 待办
 

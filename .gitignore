@@ -28,6 +28,12 @@ scenes/*/dialogue.wav
 # 整集导出音频：不入 git，导出清单（export.json）保留
 projects/**/*.wav
 
+# 本地环境配置不入库，示例配置保留
+.env
+.env.*
+!.env.example
+!.env.*.example
+
 # Python
 __pycache__/
 *.pyc

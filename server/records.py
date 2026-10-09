@@ -114,6 +114,12 @@ def promote_to_voice(rid: str, name: str, gender: str = "unknown") -> dict:
         "version": "v1.0",
         "created_at": time.strftime("%Y-%m-%d"),
     }
+    if (record.get('model') or {}).get('name', '').startswith('Qwen/'):
+        voice_json.update(collection='音色库新千问三', voice_source='design',
+            name=name if 'Qwen3' in name else name + '（Qwen3）',
+            gender=record.get('gender', gender), age_group=record.get('age_group', '未标注'),
+            timbre_tags=record.get('timbre_tags', []), review_status='unreviewed',
+            description=record.get('control_instruction', ''), source_generation=record)
     (vdir / "voice.json").write_text(
         json.dumps(voice_json, ensure_ascii=False, indent=2), encoding="utf-8")
     library.get_library(force=True)

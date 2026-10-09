@@ -9,6 +9,7 @@ VALID_MODES = {"auto", "basic", "design", "controllable_clone", "ultimate_clone"
 
 def generate(
     text: str,
+    control_instruction: str = "",
     voice_id: str = "",
     emotion: str = "",
     requested_mode: str = "auto",
@@ -33,9 +34,11 @@ def generate(
             "请改用 reference_samples 或 design 来源的音色。")
     params = ref.get("generation_params") or {}
     source_text = params.get("text") or ""
-    effective_text = text
+    saved_control = ""
     if source_text.startswith("(") and ")" in source_text:
-        effective_text = source_text[:source_text.index(")") + 1] + text
+        saved_control = source_text[1:source_text.index(")")].strip()
+    control = control_instruction.strip().replace("(", "").replace(")", "")
+    control = control.replace("（", "").replace("）", "")
     if params:
         seed = seed if seed is not None else params.get("seed")
         cfg_value = params.get("cfg_value", cfg_value)
@@ -50,12 +53,19 @@ def generate(
         if reference:
             mode = "ultimate_clone" if preferred == "ultimate_clone" and transcript else "controllable_clone"
         else:
-            mode = "design" if effective_text.lstrip().startswith(("(", "（")) else "basic"
+            mode = "design" if control or saved_control or text.lstrip().startswith(("(", "（")) else "basic"
 
     if mode in ("controllable_clone", "ultimate_clone") and not reference:
         raise ValueError("克隆模式需要绑定一个包含参考音频的音色")
     if mode == "ultimate_clone" and not transcript:
         raise ValueError("极致克隆需要参考音频的精确转录文本")
+
+    # 官方 VoxCPM2 约定通过“(控制描述)目标文本”表达可控风格。
+    # 极致克隆依赖参考音频与转录，不叠加控制描述。
+    effective_control = control or saved_control
+    effective_text = text
+    if effective_control and mode in ("controllable_clone", "design"):
+        effective_text = f"({effective_control}){text}"
 
     reference_arg = reference if mode in ("controllable_clone", "ultimate_clone") else None
     prompt_arg = reference if mode == "ultimate_clone" else None
@@ -73,6 +83,7 @@ def generate(
     )
     meta = {
         "text": text,
+        "control_instruction": effective_control if mode in ("controllable_clone", "design") else None,
         "mode": tts.detect_mode(effective_text, reference_arg, prompt_arg, prompt_text_arg),
         "voice_id": voice_id or None,
         "emotion": emotion or None,

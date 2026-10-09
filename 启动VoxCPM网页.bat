@@ -2,7 +2,7 @@
 setlocal
 cd /d "%~dp0"
 echo ============================================
-echo  ShengYing - VoxCPM2 Audio Studio
+echo  ShengYing - React + Go Audio Studio
 echo ============================================
 echo.
 if not exist ".venv\Scripts\python.exe" (
@@ -10,25 +10,35 @@ if not exist ".venv\Scripts\python.exe" (
   pause
   exit /b 1
 )
-".venv\Scripts\python.exe" -c "import sys; sys.exit(0 if (3,10) <= sys.version_info[:2] < (3,13) else 1)"
+if not exist ".tooling\go\go\bin\go.exe" (
+  echo [ERROR] Portable Go toolchain not found in .tooling\go\go\bin.
+  echo Download Go for Windows amd64 from https://go.dev/dl and extract it under .tooling\go.
+  pause
+  exit /b 1
+)
+if not exist "client\node_modules\vite\bin\vite.js" (
+  echo [ERROR] React dependencies are missing. Run: cd client ^&^& npm install
+  pause
+  exit /b 1
+)
+echo Building React frontend...
+call npm --prefix client run build
 if errorlevel 1 (
-  echo [ERROR] .venv must use Python 3.10-3.12. Rebuild it with Python 3.11 or 3.12.
   pause
   exit /b 1
 )
-if not exist "models\VoxCPM2" (
-  echo [ERROR] models\VoxCPM2 not found. Run scripts\setup_voxcpm.ps1 first.
+echo Building Go server...
+.tooling\go\go\bin\go.exe build -o .tooling\shengying-server.exe .\backend
+if errorlevel 1 (
   pause
   exit /b 1
 )
-echo  Starting server, please wait...
-echo  Then open in browser: http://127.0.0.1:8317/
-echo.
 where nvidia-smi >nul 2>nul
 if errorlevel 1 (
   set "VOXCPM_DEVICE=cpu"
   set "VOXCPM_OPTIMIZE=0"
   echo  NVIDIA GPU not detected; VoxCPM2 will run on CPU and may be slow.
 )
-.venv\Scripts\python.exe -m uvicorn server.main:app --host 127.0.0.1 --port 8317
-pause
+echo Starting local service...
+powershell -NoProfile -ExecutionPolicy Bypass -File "scripts\start_workbench.ps1"
+if errorlevel 1 pause

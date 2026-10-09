@@ -2,6 +2,7 @@
 import json
 import tempfile
 import unittest
+import zipfile
 from pathlib import Path
 from unittest.mock import patch
 
@@ -113,6 +114,37 @@ class SynthesisRoutingTests(unittest.TestCase):
             synthesis.generate(
                 "新台词", voice_id="v_test", requested_mode="ultimate_clone")
 
+    def test_control_instruction_is_applied_by_backend_for_controllable_clone(self):
+        self._voice(transcript="", clone_mode="controllable_clone")
+        with patch.object(tts, "synthesize", return_value=(np.zeros(10), 48000, 9)) as synth:
+            _, _, meta = synthesis.generate(
+                "新台词",
+                control_instruction="（温柔、慢速）",
+                voice_id="v_test",
+                requested_mode="controllable_clone",
+            )
+        self.assertEqual(synth.call_args.kwargs["text"], "(温柔、慢速)新台词")
+        self.assertEqual(meta["text"], "新台词")
+        self.assertEqual(meta["control_instruction"], "温柔、慢速")
+
+    def test_control_instruction_is_ignored_for_ultimate_clone(self):
+        self._voice()
+        with patch.object(tts, "synthesize", return_value=(np.zeros(10), 48000, 10)) as synth:
+            _, _, meta = synthesis.generate(
+                "新台词",
+                control_instruction="激动",
+                voice_id="v_test",
+                requested_mode="ultimate_clone",
+            )
+        self.assertEqual(synth.call_args.kwargs["text"], "新台词")
+        self.assertIsNone(meta["control_instruction"])
+
+    def test_auto_with_control_and_no_reference_routes_to_voice_design(self):
+        with patch.object(tts, "synthesize", return_value=(np.zeros(10), 48000, 11)) as synth:
+            _, _, meta = synthesis.generate("新台词", control_instruction="少年，清亮")
+        self.assertEqual(meta["mode"], "design")
+        self.assertEqual(synth.call_args.kwargs["text"], "(少年，清亮)新台词")
+
     def test_import_voice_requires_consent_and_creates_ultimate_asset(self):
         fake_wav = b"RIFF" + (36).to_bytes(4, "little") + b"WAVE" + b"\0" * 32
         with self.assertRaisesRegex(ValueError, "授权"):
@@ -150,6 +182,42 @@ class RecordPromotionTests(unittest.TestCase):
             finally:
                 records.RECORDS_ROOT, library.ASSETS_ROOT = old_records, old_assets
                 library._cache["loaded_at"] = 0
+
+
+class SimpleAssetLibraryTests(unittest.TestCase):
+    def test_scan_supports_wav_and_mp3_with_nested_categories(self):
+        with tempfile.TemporaryDirectory() as temp:
+            old_assets = library.ASSETS_ROOT
+            library.ASSETS_ROOT = Path(temp) / "assets"
+            folder = library.ASSETS_ROOT / "sfx" / "音效库" / "键盘"
+            folder.mkdir(parents=True)
+            (folder / "快速.mp3").write_bytes(b"mp3")
+            (folder / "慢速.wav").write_bytes(b"wav")
+            (folder / "说明.txt").write_text("ignore", encoding="utf-8")
+            try:
+                items = library._scan_simple("sfx")
+            finally:
+                library.ASSETS_ROOT = old_assets
+            self.assertEqual(len(items), 2)
+            self.assertEqual({item["format"] for item in items}, {"mp3", "wav"})
+            self.assertTrue(all(item["category"] == "音效库/键盘" for item in items))
+            self.assertTrue(all(item["path"].startswith("音效库/键盘/") for item in items))
+
+    def test_bundled_sfx_is_extracted_on_first_use(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            old_assets = library.ASSETS_ROOT
+            library.ASSETS_ROOT = root / "assets"
+            with zipfile.ZipFile(root / "音效库-1.6.zip", "w") as bundle:
+                bundle.writestr("音效库-1.6/工作场景/点击.mp3", b"mp3")
+            try:
+                extracted = library.ensure_bundled_sfx()
+                second_run = library.ensure_bundled_sfx()
+            finally:
+                library.ASSETS_ROOT = old_assets
+            self.assertTrue(extracted)
+            self.assertFalse(second_run)
+            self.assertTrue((root / "assets/sfx/音效库-1.6/工作场景/点击.mp3").is_file())
 
 
 if __name__ == "__main__":

@@ -32,6 +32,7 @@ LOAD_DENOISER = os.environ.get("VOXCPM_LOAD_DENOISER", "0").lower() in ("1", "tr
 
 _lock = threading.Lock()
 _model = None
+engine_lock = threading.RLock()
 
 
 def get_model():
@@ -52,7 +53,12 @@ def get_model():
     return _model
 
 
-def synthesize(
+def synthesize(*args, **kwargs):
+    with engine_lock:
+        return _synthesize(*args, **kwargs)
+
+
+def _synthesize(
     text: str,
     reference_wav_path: str | None = None,
     prompt_wav_path: str | None = None,

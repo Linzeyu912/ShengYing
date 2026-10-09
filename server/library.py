@@ -7,6 +7,8 @@ import time
 import hashlib
 import uuid
 import os
+import threading
+import zipfile
 from pathlib import Path
 
 ASSETS_ROOT = Path(os.environ.get(
@@ -17,10 +19,32 @@ EMOTIONS = ["开心", "悲伤", "愤怒", "惊讶", "平静", "紧张", "温柔"
 
 _cache: dict = {"loaded_at": 0.0, "voices": [], "sfx": [], "ambience": []}
 _TTL = 5.0  # 秒；开发期短缓存，避免每次请求都扫盘
+_bundle_lock = threading.Lock()
+_review_lock = threading.Lock()
 
 # 音色来源：统一标识"音色怎么来的"，是 voice.json 的权威字段。
 # 缺失时按旧字段推断，保证 v1.1 及更早音色向后兼容。
 VOICE_SOURCES = ("reference_samples", "design", "lora")
+
+
+def ensure_bundled_sfx() -> bool:
+    """首次使用时安全解压随仓库交付的音效库，返回是否执行了解压。"""
+    archive = ASSETS_ROOT.parent / "音效库-1.6.zip"
+    destination = (ASSETS_ROOT / "sfx").resolve()
+    expected_root = destination / "音效库-1.6"
+    if expected_root.is_dir() or not archive.is_file():
+        return False
+    with _bundle_lock:
+        if expected_root.is_dir():
+            return False
+        destination.mkdir(parents=True, exist_ok=True)
+        with zipfile.ZipFile(archive) as bundle:
+            for member in bundle.infolist():
+                target = (destination / member.filename).resolve()
+                if target != destination and destination not in target.parents:
+                    raise ValueError(f"音效库压缩包包含不安全路径: {member.filename}")
+            bundle.extractall(destination)
+    return True
 
 
 def _infer_voice_source(meta: dict) -> str:
@@ -62,7 +86,11 @@ def _load_voices() -> list[dict]:
         voices.append({
             "voice_id": meta["voice_id"],
             "name": meta["name"],
+            "collection": meta.get("collection", ""),
+            "selection_status": meta.get("selection_status", ""),
             "gender": meta.get("gender", "unknown"),
+            "age_group": meta.get("age_group", "未标注"),
+            "timbre_tags": meta.get("timbre_tags", []),
             "description": meta.get("description", ""),
             "language": meta.get("language", "zh"),
             "version": meta.get("version", ""),
@@ -74,6 +102,10 @@ def _load_voices() -> list[dict]:
             "generation_params": meta.get("generation_params"),
             "emotions": meta.get("emotions", []),
             "known_issues": meta.get("known_issues", []),
+            "review_status": meta.get("review_status", "unreviewed"),
+            "review_notes": meta.get("review_notes", ""),
+            "technical_review": meta.get("technical_review"),
+            "auto_review": meta.get("auto_review"),
             "missing_samples": missing_samples,
             "samples": samples,
         })
@@ -81,17 +113,20 @@ def _load_voices() -> list[dict]:
 
 
 def _scan_simple(kind: str) -> list[dict]:
-    """扫描 sfx / ambience 目录（当前为占位，未来按类别子目录组织）。"""
+    """扫描 sfx / ambience 目录，支持 WAV 与 MP3 并保留多级分类。"""
     items = []
     root = ASSETS_ROOT / kind
     if not root.exists():
         return items
-    for f in sorted(root.rglob("*.wav")):
+    files = [f for f in root.rglob("*") if f.is_file() and f.suffix.lower() in (".wav", ".mp3")]
+    for f in sorted(files):
         rel = f.relative_to(root)
         items.append({
             "id": rel.with_suffix("").as_posix(),
             "name": f.stem,
-            "category": rel.parts[0] if len(rel.parts) > 1 else "未分类",
+            "category": rel.parent.as_posix() if len(rel.parts) > 1 else "未分类",
+            "path": rel.as_posix(),
+            "format": f.suffix.lower().lstrip("."),
             "url": f"/api/assets/{kind}/audio/{rel.as_posix()}",
             "size_bytes": f.stat().st_size,
         })
@@ -100,6 +135,7 @@ def _scan_simple(kind: str) -> list[dict]:
 
 def get_library(force: bool = False) -> dict:
     if force or time.time() - _cache["loaded_at"] > _TTL:
+        ensure_bundled_sfx()
         _cache["voices"] = _load_voices()
         _cache["sfx"] = _scan_simple("sfx")
         _cache["ambience"] = _scan_simple("ambience")
@@ -128,7 +164,7 @@ def resolve_asset_file(kind: str, relpath: str) -> Path | None:
         return None
     base = (ASSETS_ROOT / kind).resolve()
     target = (base / relpath).resolve()
-    if target.is_file() and str(target).startswith(str(base)):
+    if target.is_file() and (target == base or base in target.parents):
         return target
     return None
 
@@ -309,12 +345,33 @@ def voice_asset_status() -> dict:
     }
 
 
+def save_voice_review(voice_id: str, status: str, notes: str) -> dict:
+    if status not in ("unreviewed", "needs_review", "approved"):
+        raise ValueError("无效审核状态")
+    if status == "needs_review" and not notes.strip():
+        raise ValueError("标记待复核时请填写问题说明")
+    root = (ASSETS_ROOT / "voices").resolve()
+    directory = (root / voice_id).resolve()
+    if directory.parent != root or not (directory / "voice.json").is_file():
+        raise FileNotFoundError("音色不存在")
+    with _review_lock:
+        path = directory / "voice.json"
+        meta = json.loads(path.read_text(encoding="utf-8"))
+        meta.update(review_status=status, review_notes=notes.strip(),
+                    reviewed_at=time.strftime("%Y-%m-%d %H:%M:%S"))
+        temporary = path.with_suffix(".review.tmp")
+        temporary.write_text(json.dumps(meta, ensure_ascii=False, indent=2), encoding="utf-8")
+        temporary.replace(path)
+        get_library(force=True)
+        return get_voice(voice_id)
+
+
 def search_voices(q: str = "", gender: str = "", emotion: str = "") -> list[dict]:
     results = []
     for v in get_library()["voices"]:
         if gender and v["gender"] != gender:
             continue
-        if q and q.lower() not in (v["name"] + v["voice_id"] + v["description"]).lower():
+        if q and q.lower() not in (v["name"] + v["voice_id"] + v["description"] + v["age_group"] + " ".join(v["timbre_tags"])).lower():
             continue
         if emotion:
             matched = [s for s in v["samples"] if s["emotion"] == emotion]

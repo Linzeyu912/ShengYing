@@ -34,13 +34,27 @@
   .sample { display: flex; align-items: center; gap: 8px; padding: 5px 0; border-top: 1px solid var(--line); }
   .sample .emo { width: 40px; font-size: 13px; flex: none; }
   .sample audio { flex: 1; height: 30px; min-width: 0; }
+  #newVoiceGrid, #qwenVoiceGrid { grid-template-columns: repeat(auto-fill, minmax(min(100%, 245px), 1fr)); gap: 10px; align-items: start; }
+  .voice-compact { padding: 12px; min-width: 0; overflow-wrap: anywhere; }
+  .voice-compact h2 { display: block; margin: 0 0 8px; font-size: 15px; line-height: 1.5; }
+  .voice-compact .voice-brief { font-size: 12px; color: var(--dim); line-height: 1.6; margin-bottom: 8px; }
+  .voice-compact .compact-review { display: inline-block; margin-bottom: 8px; }
+  .voice-compact > .sample { display: grid; grid-template-columns: minmax(0,1fr) auto auto; gap: 6px; }
+  .voice-compact > .sample .emo { width: auto; }
+  .voice-compact > .sample audio { grid-column: 1 / -1; grid-row: 2; width: 100%; }
+  .voice-compact > .sample button { padding: 4px 9px; font-size: 12px; }
+  .voice-compact > details { border-top: 1px solid var(--line); margin-top: 8px; padding-top: 8px; font-size: 12px; }
+  .voice-compact > details > summary { cursor: pointer; color: var(--dim); padding: 4px 0; }
+  .voice-compact > details[open] > summary { margin-bottom: 8px; }
+  .voice-compact > details .tag { display: inline-block; margin: 2px; }
+  .voice-compact > details select, .voice-compact > details textarea { max-width: 100%; box-sizing: border-box; }
   .note { font-size: 11px; color: #f0b35b; }
   .empty { color: var(--dim); padding: 24px; text-align: center; }
   .rec { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; }
   .rec .meta { width: 300px; flex: none; color: var(--dim); font-size: 12px; }
   .rec .txt { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .rec audio { width: 220px; height: 30px; }
-  #genStatus, #batchStatus { color: var(--dim); font-size: 13px; }
+  #genStatus { color: var(--dim); font-size: 13px; }
   .line-row select.char { width: 130px; }
   .line-row select.emo { width: 90px; }
   .line-row input.txt { flex: 1; min-width: 200px; }
@@ -54,6 +68,45 @@
   .bad { color: #ff7b72; }
   .hint { color: var(--dim); font-size: 12px; }
   label.check { color: var(--dim); font-size: 13px; display:flex; gap:6px; align-items:center; }
+  .script-cast-row { display:grid; grid-template-columns:140px minmax(180px,1fr) minmax(220px,1.4fr); gap:10px; align-items:center; padding:8px 0; border-top:1px solid var(--line); font-size:13px; }
+  .script-line { display:grid; grid-template-columns:70px 120px 80px 1fr; gap:8px; padding:6px 0; border-top:1px solid var(--line); font-size:12px; }
+  .script-line span:last-child { color:var(--fg); }
+  .voxcpm-panel { padding: 0; overflow: hidden; }
+  .voxcpm-brand { text-align: center; padding: 22px 20px 18px; border-bottom: 1px solid var(--line);
+    background: linear-gradient(180deg, rgba(91,140,255,.12), transparent); }
+  .voxcpm-brand-mark { display:inline-flex; align-items:center; gap:10px; color:#a9c2ff;
+    font-size:24px; font-weight:800; letter-spacing:.4px; }
+  .voxcpm-brand-mark::before { content:'◉'; color:var(--accent); font-size:28px; }
+  .voxcpm-brand p { color:var(--dim); font-size:12px; margin-top:5px; }
+  .voxcpm-layout { display:grid; grid-template-columns:minmax(0,1.15fr) minmax(300px,.85fr); gap:0; }
+  .voxcpm-column { padding:20px; min-width:0; }
+  .voxcpm-column + .voxcpm-column { border-left:1px solid var(--line); background:#151922; }
+  .voxcpm-field { margin-bottom:14px; }
+  .voxcpm-field > label, .voxcpm-field > .field-label { display:block; color:#cbd2df; font-size:13px;
+    font-weight:600; margin-bottom:7px; }
+  .voxcpm-field textarea, .voxcpm-field select, .voxcpm-field input { width:100%; }
+  .voxcpm-reference { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .voxcpm-reference audio { width:100%; height:38px; grid-column:1 / -1; }
+  [hidden] { display:none !important; }
+  .reference-choice { display:flex; gap:18px; flex-wrap:wrap; margin-bottom:12px; }
+  .reference-choice label { display:flex; align-items:center; gap:6px; font-size:13px; }
+  .reference-choice input { width:auto; }
+  .voxcpm-advanced { border:1px solid var(--line); border-radius:9px; margin:14px 0; overflow:hidden; }
+  .voxcpm-advanced summary { cursor:pointer; padding:11px 12px; color:#cbd2df; font-size:13px; font-weight:600; }
+  .voxcpm-advanced-body { padding:0 12px 12px; display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .voxcpm-generate { width:100%; padding:11px 18px; font-weight:700; font-size:15px; }
+  .voxcpm-output { min-height:100%; display:flex; flex-direction:column; justify-content:center; }
+  .voxcpm-output-box { border:1px dashed #394359; border-radius:12px; padding:18px; min-height:190px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:14px; text-align:center; }
+  .voxcpm-output-box audio { width:100%; }
+  .voxcpm-output-icon { width:54px; height:54px; border-radius:50%; background:rgba(91,140,255,.14);
+    color:#8cb0ff; display:grid; place-items:center; font-size:24px; }
+  @media (max-width: 700px) {
+    .script-cast-row, .script-line { grid-template-columns:1fr; gap:4px; }
+    .voxcpm-layout { grid-template-columns:1fr; }
+    .voxcpm-column + .voxcpm-column { border-left:0; border-top:1px solid var(--line); }
+    .voxcpm-reference, .voxcpm-advanced-body { grid-template-columns:1fr; }
+  }
 </style>
 </head>
 <body>
@@ -65,7 +118,7 @@
   <div id="ttsStatus" class="stats" style="margin:0">正在检查环境…</div>
 </div>
 
-<div class="panel">
+<div class="panel" id="projectPanel">
   <h3>项目与剧集</h3>
   <div class="row">
     <select id="projSelect" style="min-width:160px"><option value="">选择项目…</option></select>
@@ -89,19 +142,31 @@
 </div>
 
 <div class="panel">
-  <h3>场次对白批量生成 <span class="stats" id="batchEp"></span></h3>
+  <h3>合并完整音频</h3>
   <div class="row">
-    <input id="sceneName" placeholder="场次名称，如：第一集·雨夜对峙" style="flex:1; min-width:220px">
-    <button class="ghost" onclick="addLine()">+ 加一行台词</button>
-    <button id="batchBtn" onclick="runBatch()">批量生成</button>
-    <span id="batchStatus"></span>
+    <select id="scriptMergeScene" style="flex:1; min-width:240px"><option value="">选择已经逐句生成的场次…</option></select>
+    <label class="check">台词间隔 <input id="scriptMergeGap" type="number" min="0" max="10000" value="500" style="width:82px"> ms</label>
+    <button id="scriptMergeBtn" onclick="mergeScriptDub()" disabled>严格按剧本顺序合并</button>
+    <span id="scriptMergeStatus" class="stats" style="margin:0"></span>
   </div>
-  <div id="lineRows"></div>
+  <div class="hint">这里只负责合并，不会重新生成配音。任何一句音频缺失都会停止并报错，不会跳过。</div>
+  <div id="scriptDubResult" class="row" style="display:none; margin-top:10px">
+    <audio id="scriptDubAudio" controls style="flex:1"></audio>
+    <span id="scriptDubMeta" class="stats" style="margin:0"></span>
+    <a id="scriptDubDownload" class="stats" href="#" download style="margin:0">下载完整 WAV</a>
+  </div>
 </div>
 
 <div class="panel">
-  <h3>场次回放 <button class="ghost" onclick="loadScenes()">刷新</button></h3>
-  <div id="scenes"><div class="empty">暂无场次</div></div>
+  <h3>选择音效</h3>
+  <div class="row">
+    <select id="sfxPickerCategory" style="min-width:260px" onchange="updateSfxPickerItems()"><option value="">全部分类</option></select>
+    <select id="sfxPickerItem" style="flex:1; min-width:320px" onchange="selectSfx()"><option value="">选择音效…</option></select>
+    <button id="sfxExportBtn" onclick="exportSelectedSfx()" disabled>导出所选音效</button>
+    <span id="sfxPickerMeta" class="stats" style="margin:0"></span>
+  </div>
+  <audio id="sfxPickerAudio" controls preload="none" style="width:100%; margin-top:10px"></audio>
+  <div class="hint">素材来自“音效库-1.6”。选中的音效会作为场次混音面板里的默认音效，仍可在场次中指定插入到第几行。</div>
 </div>
 
 <div class="panel">
@@ -121,58 +186,102 @@
   <div id="charList"><div class="empty">暂无角色</div></div>
 </div>
 
-<div class="panel">
-  <h3>导入极致克隆音色</h3>
-  <div class="row">
-    <input id="voiceName" placeholder="音色名称" style="width:150px">
-    <select id="voiceGender"><option value="unknown">性别待确认</option><option value="male">男声</option><option value="female">女声</option></select>
-    <select id="voiceEmotion"><option value="平静">平静</option></select>
-    <input id="voiceFile" type="file" accept=".wav,audio/wav" style="flex:1; min-width:220px">
+<section class="panel voxcpm-panel" id="qwenDesignPanel">
+  <div class="voxcpm-brand"><div class="voxcpm-brand-mark">Qwen3-TTS</div><p>本地原创音色设计 · 仅 VoiceDesign</p></div>
+  <p class="hint">用文字描述声音和表演，再生成试听。与 VoxCPM2 轮流使用显卡；首次加载需要等待。性别、年龄和特点标签用于入库，请同时在音色描述中写明。</p>
+  <label for="qwenInstruction">音色与表演描述</label>
+  <textarea id="qwenInstruction" rows="4" maxlength="1500" style="width:100%">二十五岁男性，中音略带沙哑，声音松弛而清晰，像对老朋友说话。前句轻松打趣，后句真诚坚定，情绪自然，不用播音腔。</textarea>
+  <label for="qwenText">试听台词（最多200字）</label>
+  <textarea id="qwenText" rows="3" maxlength="200" style="width:100%">别紧张，我逗你的。这事儿我陪你一起扛，不是说着玩的。</textarea>
+  <div class="bar">
+    <select id="qwenGender" aria-label="Qwen3性别"><option value="male">男声</option><option value="female">女声</option><option value="unknown">待确认</option></select>
+    <select id="qwenAge" aria-label="Qwen3年龄段"><option>青年（20–30岁）</option><option>少年感（16–20岁）</option><option>轻熟（30–40岁）</option><option>中年（40–50岁）</option><option>未标注</option></select>
+    <input id="qwenTags" placeholder="音色特点，逗号分隔" value="轻沙哑,松弛,清晰" aria-label="Qwen3音色特点">
+    <input id="qwenEmotion" placeholder="目标情绪" value="轻松转坚定" aria-label="Qwen3目标情绪">
+    <input id="qwenSeed" type="number" min="0" max="2147483647" placeholder="随机种子（可空）" aria-label="Qwen3随机种子">
   </div>
-  <textarea id="voiceTranscript" placeholder="参考音频的精确逐字转录（极致克隆必填；标点也请尽量准确）"></textarea>
-  <div class="row">
-    <input id="voiceDesc" placeholder="音色说明（可选）" style="flex:1; min-width:220px">
-    <input id="voiceLicense" value="authorized" placeholder="授权/许可证" style="width:150px">
-    <label class="check"><input id="voiceConsent" type="checkbox">我确认已获得该声音的使用与克隆授权</label>
-    <button id="voiceImportBtn" onclick="importVoice()">导入音色</button>
-    <span id="voiceImportStatus" class="stats" style="margin:0"></span>
+  <button id="qwenGenerateButton" onclick="generateQwenDesign()">设计音色并生成试听</button>
+  <span id="qwenStatus" role="status"></span>
+  <div id="qwenResult" hidden style="margin-top:12px">
+    <audio id="qwenAudio" controls></audio>
+    <a id="qwenDownload" download>下载 WAV</a>
+    <button id="qwenSaveButton" class="ghost" onclick="saveQwenVoice()">保存到音色库新千问三</button>
   </div>
-  <div class="hint">建议使用 5–30 秒、单人、无背景音乐的干净 WAV；导入后角色可直接在批量对白中使用极致克隆。</div>
+</section>
+
+<div class="panel voxcpm-panel" id="voxcpmPanel">
+  <div class="voxcpm-brand">
+    <div class="voxcpm-brand-mark">VoxCPM2</div>
+    <p>真实音色克隆与可控语音生成</p>
+  </div>
+  <div class="voxcpm-layout">
+    <div class="voxcpm-column">
+      <div class="voxcpm-field">
+        <span class="field-label">🎤 参考音频</span>
+        <div class="reference-choice" role="group" aria-label="参考音频来源">
+          <label><input type="radio" name="ttsSource" value="library" checked onchange="updateReferenceSource()">使用音频库</label>
+          <label><input type="radio" name="ttsSource" value="none" onchange="updateReferenceSource()">不使用库内音频</label>
+        </div>
+        <div class="voxcpm-reference" id="ttsLibraryReference">
+          <select id="ttsVoice" aria-label="参考音色"><option value="">请选择库内音色…</option></select>
+          <select id="ttsEmotion"><option value="">参考样本情绪（默认首个）</option></select>
+          <audio id="ttsReferenceAudio" controls preload="none"></audio>
+        </div>
+      </div>
+      <div class="voxcpm-field">
+        <label for="ttsMode">🎙️ 生成模式</label>
+        <select id="ttsMode" onchange="updateTtsModeHint()">
+          <option value="auto">自动选择</option>
+          <option value="ultimate_clone">极致克隆</option>
+          <option value="controllable_clone">可控克隆</option>
+          <option value="design">音色设计</option>
+          <option value="basic">基础 TTS</option>
+        </select>
+        <div id="ttsModeHint" class="hint" style="margin-top:7px"></div>
+      </div>
+      <div class="voxcpm-field">
+        <label for="ttsPromptText">参考音频内容文本</label>
+        <textarea id="ttsPromptText" placeholder="极致克隆时可填写参考音频的准确转录；留空则读取音色样本转录" style="min-height:56px"></textarea>
+      </div>
+      <div class="voxcpm-field">
+        <label for="ttsControl">🎛️ Control Instruction（可选）</label>
+        <textarea id="ttsControl" placeholder="例如：年轻女性，温柔甜美 / 情绪激动，语速稍快" style="min-height:56px"></textarea>
+      </div>
+      <div class="voxcpm-field">
+        <label for="ttsText">✍️ Target Text — 要合成的目标文本</label>
+        <textarea id="ttsText" placeholder="请输入需要生成语音的文字" style="min-height:90px"></textarea>
+      </div>
+      <details class="voxcpm-advanced">
+        <summary>⚙️ 高级设置</summary>
+        <div class="voxcpm-advanced-body">
+          <div class="voxcpm-field" style="margin:0"><label for="ttsSeed">随机种子</label><input id="ttsSeed" type="number" placeholder="留空则随机"></div>
+          <div class="voxcpm-field" style="margin:0"><label for="ttsSteps">推理步数</label><input id="ttsSteps" type="number" min="4" max="30" value="10"></div>
+          <label class="check"><input id="ttsNormalize" type="checkbox">文本规范化</label>
+          <label class="check"><input id="ttsDenoise" type="checkbox">参考音频降噪增强</label>
+        </div>
+      </details>
+      <button id="ttsBtn" class="voxcpm-generate" onclick="generate()">🔊 开始生成</button>
+      <div id="genStatus" style="margin-top:9px"></div>
+    </div>
+    <div class="voxcpm-column">
+      <div class="voxcpm-output">
+        <h3>生成结果</h3>
+        <div class="voxcpm-output-box">
+          <div class="voxcpm-output-icon">♪</div>
+          <div id="ttsResultEmpty" class="hint">生成完成后，音频会显示在这里</div>
+          <div id="ttsResult" style="width:100%; display:none">
+            <audio id="ttsAudio" controls style="width:100%"></audio>
+            <div id="ttsMeta" class="stats" style="margin:10px 0 0"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </div>
 
-<div class="panel">
-  <h3>单句合成（调试用）</h3>
-  <textarea id="ttsText" placeholder="输入台词；开头加 (音色描述) 即音色设计模式"></textarea>
-  <div class="row">
-    <select id="ttsVoice"><option value="">不使用库内音色</option></select>
-    <select id="ttsEmotion"><option value="">参考样本情绪（默认首个）</option></select>
-    <select id="ttsMode" onchange="updateTtsModeHint()">
-      <option value="auto">模式：自动</option>
-      <option value="ultimate_clone">模式：极致克隆</option>
-      <option value="controllable_clone">模式：可控克隆</option>
-      <option value="design">模式：音色设计</option>
-      <option value="basic">模式：基础 TTS</option>
-    </select>
-    <input id="ttsSeed" type="number" placeholder="seed（留空随机）" style="width:150px">
-    <label class="check">步数 <input id="ttsSteps" type="number" min="4" max="30" value="10" style="width:62px"></label>
-    <label class="check"><input id="ttsNormalize" type="checkbox">文本规范化</label>
-    <label class="check"><input id="ttsDenoise" type="checkbox">参考降噪</label>
-    <button id="ttsBtn" onclick="generate()">生成</button>
-    <span id="genStatus"></span>
-  </div>
-  <textarea id="ttsPromptText" placeholder="极致克隆转录覆盖（通常留空，自动读取音色样本转录）" style="min-height:44px"></textarea>
-  <div id="ttsModeHint" class="hint"></div>
-  <div class="row" id="ttsResult" style="margin-top:10px; display:none">
-    <audio id="ttsAudio" controls style="flex:1"></audio>
-    <span id="ttsMeta" class="stats" style="margin:0"></span>
-  </div>
-</div>
-
-<div class="panel">
-  <h3>生成记录 <button class="ghost" onclick="loadHistory()">刷新</button></h3>
-  <div id="history"><div class="empty">暂无生成记录</div></div>
-</div>
-
+<section class="panel" id="voiceLibraryPanel">
+<h3>音色库 <button class="ghost" onclick="load()">刷新</button></h3>
+<p class="hint" style="margin-bottom:14px">查看库内音色及其已有情绪，点击播放器即可试听各个情绪的参考音频。</p>
 <div class="bar">
   <input id="q" type="search" placeholder="搜索音色名称或描述…">
   <select id="gender">
@@ -191,14 +300,239 @@
   <button class="ghost" onclick="uploadAsset('ambience')">导入环境音</button>
 </div>
 <div class="stats" id="stats"></div>
+<h3>龙族人物音色</h3>
+<div class="grid" id="dragonVoiceGrid" style="margin-bottom:20px"></div>
+<h3>通用音色</h3>
 <div class="grid" id="grid"></div>
+</section>
+
+<section class="panel" id="newVoiceLibraryPanel">
+  <h3>音色库新VoxCPM2 <button class="ghost" onclick="load()">刷新</button></h3>
+  <button id="batchReviewButton" onclick="runLocalReview()">一键本地初审（全部新音色）</button>
+  <span id="localReviewProgress" role="status"></span>
+  <p class="hint">音频检查＋NISQA-TTS自然度预测，全程本地。分数仅作复核线索，不等于人工通过；模型权重仅限非商业使用。</p>
+  <p class="hint">来自新音频库的原创设计音色。年龄段为听感设定，音色特点为设计标签，实际审核状态见各音色卡片。点击“使用”可直接用于 VoxCPM2 合成。</p>
+  <div class="bar">
+    <input id="newVoiceSearch" type="search" placeholder="搜索名称、音色特点…" aria-label="搜索新音色" oninput="load()">
+    <select id="newVoiceGender" aria-label="新音色性别" onchange="load()"><option value="">全部性别</option><option value="male">男声</option><option value="female">女声</option></select>
+    <select id="newVoiceAge" aria-label="新音色年龄段" onchange="load()"><option value="">全部年龄段</option><option>少年感（16–20岁）</option><option>青年（20–30岁）</option><option>轻熟（30–40岁）</option><option>中年（40–50岁）</option><option>老年（60岁以上）</option><option>未标注</option></select>
+  </div>
+  <div class="stats" id="newVoiceCount"></div>
+  <div class="grid" id="newVoiceGrid"></div>
+</section>
+
+<section class="panel" id="qwenVoiceLibraryPanel">
+  <h3>音色库新千问三 <button class="ghost" onclick="load()">刷新</button></h3>
+  <p class="hint" id="qwenBatchProgress"></p>
+  <p class="hint">Qwen3音色设计素材；上方的新音色搜索、性别和年龄筛选同时作用于这两栏。</p>
+  <div class="stats" id="qwenVoiceCount"></div>
+  <div class="grid" id="qwenVoiceGrid"></div>
+</section>
+
+<section class="panel" id="auditionPanel">
+  <h3>根据建模和剧本对角色匹配音色</h3>
+  <p class="hint" style="margin-bottom:12px">同时选择剧本和多张建模图，本地联合分析后推荐音色，可直接试听。剧本最多12000字、20个角色；图片最多12张，每张8MB，支持 JPG/JPEG/PNG/WebP/BMP。建议文件名使用角色名；不明确的归属需确认后重新分析。推荐不是人工试听结论。</p>
+  <div class="row">
+    <input id="auditionFile" type="file" accept=".txt,.docx,.md,.markdown" aria-label="试音剧本">
+    <input id="auditionImages" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.bmp" aria-label="角色建模图片">
+    <button id="auditionPreviewBtn" onclick="previewAuditions()">本地联合分析并匹配音色</button>
+    <button id="auditionGenerateBtn" onclick="generateAuditions()" disabled>为每个角色生成一句</button>
+  </div>
+  <div id="auditionStatus" class="stats" role="status"></div>
+  <div id="auditionImageBindings"></div>
+  <div id="auditionRows"></div>
+</section>
+
+<div class="panel" style="margin-top:24px">
+  <h3>场次回放 <button class="ghost" onclick="loadScenes()">刷新</button></h3>
+  <div id="scenes"><div class="empty">暂无场次</div></div>
+</div>
+
+<div class="panel">
+  <h3>生成记录 <button class="ghost" onclick="loadHistory()">刷新</button></h3>
+  <div id="history"><div class="empty">暂无生成记录</div></div>
+</div>
 
 <script>
 const grid = document.getElementById('grid');
 const stats = document.getElementById('stats');
 const els = { q: document.getElementById('q'), gender: document.getElementById('gender'), emotion: document.getElementById('emotion') };
-let debounce, voiceCache = [], charCache = [], emotionList = [], ambCache = [], sfxCache = [];
+let debounce, voiceCache = [], charCache = [], emotionList = [], ambCache = [], sfxCache = [], selectedSfxId = '';
 let projCache = [], epCache = [], curEpisode = '';
+
+// 主流程顺序：项目与剧集 → VoxCPM2 → 合并音频 → 选择音效。
+document.getElementById('projectPanel').after(document.getElementById('voxcpmPanel'));
+document.getElementById('voxcpmPanel').after(document.getElementById('voiceLibraryPanel'));
+document.getElementById('voiceLibraryPanel').after(document.getElementById('auditionPanel'));
+document.getElementById('projectPanel').after(document.getElementById('newVoiceLibraryPanel'));
+document.getElementById('voxcpmPanel').before(document.getElementById('qwenDesignPanel'));
+document.getElementById('newVoiceLibraryPanel').before(document.getElementById('qwenVoiceLibraryPanel'));
+
+function isNewVoice(v) { return ['音色库（新）','音色库新VoxCPM2','音色库新千问三'].includes(v.collection); }
+
+let qwenRecordId = null;
+async function generateQwenDesign() {
+  const button = document.getElementById('qwenGenerateButton');
+  const status = document.getElementById('qwenStatus');
+  button.disabled = true; qwenRecordId = null;
+  document.getElementById('qwenResult').hidden = true;
+  status.textContent = '正在加载本地 Qwen3 并生成，请稍候…';
+  try {
+    const seed = document.getElementById('qwenSeed').value;
+    const response = await fetch('/api/qwen/design/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({
+      text:document.getElementById('qwenText').value, instruction:document.getElementById('qwenInstruction').value,
+      gender:document.getElementById('qwenGender').value, age_group:document.getElementById('qwenAge').value,
+      tags:document.getElementById('qwenTags').value, emotion:document.getElementById('qwenEmotion').value,
+      seed:seed === '' ? null : Number(seed)})});
+    const result = await response.json();
+    if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : '请检查输入参数');
+    qwenRecordId = result.record_id;
+    const url = `/api/tts/records/${result.record_id}/audio`;
+    document.getElementById('qwenAudio').src = url;
+    document.getElementById('qwenDownload').href = url;
+    document.getElementById('qwenSaveButton').disabled = false;
+    document.getElementById('qwenResult').hidden = false;
+    status.textContent = `生成完成 · ${result.duration_sec} 秒 · seed ${result.seed}，请试听确认`;
+  } catch (e) { status.textContent = e.message; }
+  finally { button.disabled = false; }
+}
+
+async function saveQwenVoice() {
+  if (!qwenRecordId) return;
+  const name = prompt('给新音色命名：');
+  if (!name || !name.trim()) return;
+  const button = document.getElementById('qwenSaveButton'); button.disabled = true;
+  try {
+    const response = await fetch(`/api/tts/records/${qwenRecordId}/promote`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({name:name.trim()})});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || '保存失败');
+    document.getElementById('qwenStatus').textContent = '已保存到音色库新千问三，状态为未试听';
+    location.reload();
+  } catch (e) { document.getElementById('qwenStatus').textContent = e.message; button.disabled = false; }
+}
+
+let auditionRows = [];
+let auditionBindings = {};
+document.getElementById('auditionImages').onchange = () => { auditionBindings={}; document.getElementById('auditionImageBindings').replaceChildren(); };
+document.getElementById('auditionFile').onchange = () => { auditionBindings={}; };
+async function previewAuditions() {
+  const file = document.getElementById('auditionFile').files[0];
+  const status = document.getElementById('auditionStatus');
+  if (!file) { status.textContent = '请先选择 TXT、DOCX 或 Markdown 剧本'; return; }
+  const button = document.getElementById('auditionPreviewBtn');
+  button.disabled = true;
+  document.getElementById('auditionGenerateBtn').disabled = true;
+  const images = [...document.getElementById('auditionImages').files];
+  if (images.length > 12 || images.some(f => f.size > 8*1024*1024)) { status.textContent='最多12张图片，每张不能超过8MB'; button.disabled=false; return; }
+  document.getElementById('auditionFile').disabled = true;
+  document.getElementById('auditionImages').disabled = true;
+  status.textContent = '正在本地加载视觉模型并联合分析，可能需要数分钟，请勿重复提交…';
+  auditionRows = [];
+  document.getElementById('auditionRows').replaceChildren();
+  try {
+    const form = new FormData(); form.append('file', file);
+    for (const image of images) form.append('images',image);
+    form.append('bindings', JSON.stringify(auditionBindings));
+    const response = await fetch('/api/auditions/visual-preview', {method:'POST', body:form});
+    const result = await response.json();
+    if (!response.ok) throw new Error(result.detail || '分析失败');
+    auditionRows = result.items.map(item => ({...item, result:null}));
+    voiceCache = (await (await fetch('/api/voices')).json()).items;
+    const bindingsRoot = document.getElementById('auditionImageBindings'); bindingsRoot.replaceChildren();
+    for (const image of result.images || []) {
+      const box=document.createElement('div'); box.className='card';
+      const label=document.createElement('p'); label.textContent=`${image.name}：${image.visual_description}。模型建议：${image.suggested_role || '不确定'}；${image.reason}`;
+      box.appendChild(label);
+      const select=document.createElement('select'); select.setAttribute('aria-label',image.name+'对应角色');
+      select.add(new Option('未绑定／待确认（不参与角色匹配）',''));
+      auditionRows.forEach(r=>select.add(new Option(r.name,r.name)));
+      select.value=image.role; auditionBindings[String(image.index)]=image.role;
+      select.onchange=()=>{auditionBindings[String(image.index)]=select.value; document.getElementById('auditionGenerateBtn').disabled=true; status.textContent='图片归属已修改，请再次点击本地联合分析更新推荐。';};
+      box.appendChild(select); bindingsRoot.appendChild(box);
+    }
+    renderAuditions();
+    status.textContent = `识别 ${auditionRows.length} 个角色。${result.note}`;
+    document.getElementById('auditionGenerateBtn').disabled = !auditionRows.length;
+  } catch (error) { status.textContent = error.message; }
+  finally { button.disabled = false; document.getElementById('auditionFile').disabled=false; document.getElementById('auditionImages').disabled=false; }
+}
+
+function renderAuditions() {
+  const root = document.getElementById('auditionRows'); root.replaceChildren();
+  for (const item of auditionRows) {
+    const card = document.createElement('div'); card.className = 'card'; card.style.marginBottom = '12px';
+    const title = document.createElement('h3'); title.textContent = item.name; card.appendChild(title);
+    const note = document.createElement('p'); note.className = 'hint'; note.textContent = [item.description, item.visual_note, item.reason, item.line_note].filter(Boolean).join(' · '); card.appendChild(note);
+    const selectedPlayer=document.createElement('audio'); selectedPlayer.controls=true; selectedPlayer.preload='none';
+    const setSelectedAudio=()=>{ const voice=voiceCache.find(v=>v.voice_id===item.voice_id); const sample=voice?.samples.find(s=>s.emotion===item.emotion)||voice?.samples[0]; selectedPlayer.pause(); if(sample) selectedPlayer.src=sample.url; else selectedPlayer.removeAttribute('src'); selectedPlayer.hidden=!sample; selectedPlayer.load(); };
+    const select = document.createElement('select'); select.setAttribute('aria-label', item.name + '的音色');
+    select.add(new Option('设计新音色并入库', ''));
+    for (const voice of voiceCache.filter(v => v.samples.length && v.voice_source !== 'lora')) select.add(new Option(voice.name, voice.voice_id));
+    select.value = item.voice_id;
+    select.onchange = () => { item.voice_id = select.value; setSelectedAudio(); };
+    select.style.margin = '10px 0'; card.appendChild(select);
+    setSelectedAudio(); card.appendChild(selectedPlayer);
+    for (const [i,recommendation] of (item.recommendations || []).entries()) {
+      const voice=voiceCache.find(v=>v.voice_id===recommendation.voice_id); if(!voice) continue;
+      const row=document.createElement('div'); row.className='card';
+      const description=document.createElement('p'); description.textContent=`${i===0?'首选':'备选'}：${voice.name} · ${{male:'男声',female:'女声',unknown:'待确认'}[voice.gender]} · ${voice.age_group} · ${(voice.timbre_tags||[]).join('、')}。${recommendation.reason}`;
+      const player=document.createElement('audio'); player.controls=true; player.preload='none'; player.src=voice.samples[0].url;
+      const listen=document.createElement('button'); listen.textContent='试听音色'; listen.className='ghost'; listen.onclick=()=>player.play().catch(()=>{listen.textContent='请点击播放器播放';});
+      const choose=document.createElement('button'); choose.textContent='选用这个音色'; choose.className='ghost'; choose.onclick=()=>{item.voice_id=voice.voice_id;select.value=voice.voice_id;setSelectedAudio();};
+      row.append(description,listen,player,choose);card.appendChild(row);
+    }
+    for (const [key, label] of [['control','新音色声音描述'], ['emotion','试音情绪'], ['text','一句试音台词']]) {
+      const wrapper = document.createElement('label'); wrapper.textContent = label; wrapper.className = 'hint';
+      const input = document.createElement(key === 'emotion' ? 'input' : 'textarea'); input.value = item[key];
+      input.setAttribute('aria-label', item.name + '的' + label);
+      input.oninput = () => { item[key] = input.value; };
+      wrapper.appendChild(input); card.appendChild(wrapper);
+    }
+    const progress = document.createElement('div'); progress.className = 'stats'; item.progress = progress; card.appendChild(progress);
+    item.card = card;
+    root.appendChild(card);
+  }
+}
+
+async function generateAuditions() {
+  const status = document.getElementById('auditionStatus');
+  const button = document.getElementById('auditionGenerateBtn'); button.disabled = true;
+  document.getElementById('auditionPreviewBtn').disabled = true;
+  document.getElementById('auditionFile').disabled = true;
+  document.querySelectorAll('#auditionRows input, #auditionRows select, #auditionRows textarea').forEach(el => el.disabled = true);
+  let done = 0;
+  try {
+    for (const item of auditionRows) {
+      if (item.result) { done++; continue; }
+      status.textContent = `正在试音 ${done + 1}/${auditionRows.length}：${item.name}（首次加载模型较慢）`;
+      item.progress.textContent = '正在生成…';
+      try {
+        const payload = Object.fromEntries(['name','description','control','text','emotion','voice_id'].map(key => [key, item[key]]));
+        const response = await fetch('/api/auditions/generate', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(payload)});
+        const result = await response.json();
+        if (!response.ok) throw new Error(typeof result.detail === 'string' ? result.detail : '请检查输入内容');
+        item.result = result; done++;
+        item.progress.textContent = result.created_voice ? '已生成并保存新音色、角色' : '已使用库内音色生成并保存角色';
+        const player = document.createElement('audio'); player.controls = true; player.src = result.audio_url; item.card.appendChild(player);
+        const link = document.createElement('a'); link.textContent = '下载试音'; link.href = result.audio_url; link.download = item.name + '.wav'; item.card.appendChild(link);
+      } catch (error) { item.progress.textContent = '失败：' + error.message; }
+    }
+    status.textContent = `已完成 ${done}/${auditionRows.length} 个角色。` + (done < auditionRows.length ? '可修改失败项后重试，已成功项会跳过。' : '请试听确认音色是否合适。');
+    voiceCache = (await (await fetch('/api/voices')).json()).items;
+    const selected = document.getElementById('ttsVoice').value;
+    fillVoiceSelect(document.getElementById('ttsVoice'), true);
+    document.getElementById('ttsVoice').value = selected;
+    fillVoiceSelect(document.getElementById('charVoice'), false);
+    updateReferenceEmotions(); load(); loadChars(); loadHistory();
+  } catch (error) { status.textContent += ' 列表刷新失败，请刷新页面。'; }
+  finally {
+    button.disabled = auditionRows.every(item => item.result);
+    button.textContent = done === auditionRows.length ? '角色试音已完成' : '重试未完成角色';
+    document.getElementById('auditionPreviewBtn').disabled = false;
+    document.getElementById('auditionFile').disabled = false;
+    auditionRows.filter(item => !item.result).forEach(item => item.card.querySelectorAll('input, select, textarea').forEach(el => el.disabled = false));
+  }
+}
 
 // ---------- 项目与剧集 ----------
 async function loadProjects() {
@@ -262,8 +596,6 @@ async function moveScene(sid, dir, ev) {
 }
 
 function updateBatchEp() {
-  const ep = epCache.find(e => e.episode_id === curEpisode);
-  document.getElementById('batchEp').textContent = ep ? `（归属：第${ep.number}集 · ${ep.name}）` : '（未选择剧集，场次将不归属）';
   document.getElementById('exportBtn').disabled = !curEpisode;
 }
 
@@ -330,12 +662,12 @@ async function importPackage() {
 }
 
 function fillVoiceSelect(sel, withEmpty) {
-  sel.innerHTML = withEmpty ? '<option value="">不使用库内音色</option>' : '<option value="">绑定音色（必选）</option>';
+  sel.innerHTML = withEmpty ? '<option value="">请选择库内音色…</option>' : '<option value="">绑定音色（必选）</option>';
   voiceCache.forEach(v => {
     const o = document.createElement('option');
     o.value = v.voice_id;
     const ultimate = v.samples.some(s => !!s.transcript);
-    o.textContent = v.name + (!v.samples.length ? '（缺少音频）' : ultimate ? '（极致）' : '（可控）');
+    o.textContent = (v.collection ? '[' + v.collection + '] ' : '') + v.name + (!v.samples.length ? '（缺少音频）' : ultimate ? '（极致）' : '（可控）');
     sel.appendChild(o);
   });
 }
@@ -344,21 +676,51 @@ function fillEmotionSelect(sel, label) {
   emotionList.forEach(e => { const o = document.createElement('option'); o.value = o.textContent = e; sel.appendChild(o); });
 }
 
+function updateScriptMergeState() {
+  const sceneId = document.getElementById('scriptMergeScene').value;
+  document.getElementById('scriptMergeBtn').disabled = !sceneId;
+}
+
+async function mergeScriptDub() {
+  const sceneId = document.getElementById('scriptMergeScene').value;
+  if (!sceneId) { alert('请先选择一个已经逐句生成的场次'); return; }
+  const btn = document.getElementById('scriptMergeBtn');
+  const status = document.getElementById('scriptMergeStatus');
+  const gapMs = document.getElementById('scriptMergeGap').value || '500';
+  const fd = new FormData();
+  fd.append('scene_id', sceneId); fd.append('gap_ms', gapMs);
+  btn.disabled = true; status.textContent = '正在严格合并…';
+  document.getElementById('scriptDubResult').style.display = 'none';
+  try {
+    const r = await fetch('/api/script-dub/merge', { method: 'POST', body: fd });
+    if (!r.ok) throw new Error((await r.json()).detail || r.status);
+    const result = await r.json();
+    const url = result.audio_url + '?t=' + Date.now();
+    document.getElementById('scriptDubAudio').src = url;
+    document.getElementById('scriptDubDownload').href = url;
+    document.getElementById('scriptDubMeta').textContent =
+      `${result.line_count} 句 · 间隔 ${result.gap_ms}ms · ${result.duration_sec}s`;
+    document.getElementById('scriptDubResult').style.display = 'flex';
+    status.textContent = '合并完成';
+  } catch (e) { status.textContent = '合并失败：' + e.message; }
+  finally { updateScriptMergeState(); }
+}
+
 async function boot() {
   const s = await (await fetch('/api/library/summary')).json();
   emotionList = s.emotions;
   fillEmotionSelect(els.emotion, '全部情绪');
   fillEmotionSelect(document.getElementById('ttsEmotion'), '参考样本情绪（默认首个）');
   fillEmotionSelect(document.getElementById('charEmotion'), '默认情绪');
-  fillEmotionSelect(document.getElementById('voiceEmotion'), '参考情绪');
   voiceCache = (await (await fetch('/api/voices')).json()).items;
   fillVoiceSelect(document.getElementById('ttsVoice'), true);
+  updateReferenceSource();
   fillVoiceSelect(document.getElementById('charVoice'), false);
   ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
   sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
+  initSfxPicker();
   await loadChars();
   await loadProjects();
-  addLine();
   load(); loadHistory(); loadScenes(); loadTtsStatus(); updateTtsModeHint();
 }
 
@@ -382,46 +744,6 @@ async function loadTtsStatus() {
   }
 }
 
-async function refreshVoices() {
-  voiceCache = (await (await fetch('/api/voices')).json()).items;
-  fillVoiceSelect(document.getElementById('ttsVoice'), true);
-  fillVoiceSelect(document.getElementById('charVoice'), false);
-  await loadChars();
-  await load();
-  updateTtsModeHint();
-}
-
-async function importVoice() {
-  const fileInput = document.getElementById('voiceFile');
-  const name = document.getElementById('voiceName').value.trim();
-  const transcript = document.getElementById('voiceTranscript').value.trim();
-  const status = document.getElementById('voiceImportStatus');
-  if (!name || !transcript || !fileInput.files.length) { alert('音色名称、WAV 和精确转录都必填'); return; }
-  if (!document.getElementById('voiceConsent').checked) { alert('请先确认已获得声音使用授权'); return; }
-  const btn = document.getElementById('voiceImportBtn'); btn.disabled = true; status.textContent = '导入中…';
-  const fd = new FormData();
-  fd.append('file', fileInput.files[0]);
-  fd.append('name', name); fd.append('transcript', transcript);
-  fd.append('gender', document.getElementById('voiceGender').value);
-  fd.append('emotion', document.getElementById('voiceEmotion').value);
-  fd.append('description', document.getElementById('voiceDesc').value.trim());
-  fd.append('license_name', document.getElementById('voiceLicense').value.trim() || 'authorized');
-  fd.append('consent_confirmed', 'true');
-  try {
-    const r = await fetch('/api/voices/import', { method: 'POST', body: fd });
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
-    const voice = await r.json();
-    status.textContent = `已导入：${voice.name}`;
-    document.getElementById('voiceName').value = '';
-    document.getElementById('voiceTranscript').value = '';
-    document.getElementById('voiceDesc').value = '';
-    document.getElementById('voiceFile').value = '';
-    document.getElementById('voiceConsent').checked = false;
-    await refreshVoices(); await loadTtsStatus();
-  } catch (e) { status.textContent = '失败：' + e.message; }
-  finally { btn.disabled = false; }
-}
-
 async function uploadAsset(kind) {
   const input = document.getElementById(kind + 'Upload');
   if (!input.files.length) { alert('请先选择 wav 文件'); return; }
@@ -432,9 +754,74 @@ async function uploadAsset(kind) {
   if (r.ok) {
     ambCache = (await (await fetch('/api/assets/ambience')).json()).items;
     sfxCache = (await (await fetch('/api/assets/sfx')).json()).items;
+    initSfxPicker();
     alert('导入成功');
     input.value = ''; load();
   } else alert('失败：' + (await r.json()).detail);
+}
+
+function initSfxPicker() {
+  const category = document.getElementById('sfxPickerCategory');
+  const previous = category.value;
+  const categories = [...new Set(sfxCache.map(item => item.category))].sort();
+  category.innerHTML = '<option value="">全部分类</option>';
+  categories.forEach(value => {
+    const option = document.createElement('option');
+    option.value = option.textContent = value;
+    category.appendChild(option);
+  });
+  if (categories.includes(previous)) category.value = previous;
+  updateSfxPickerItems();
+}
+
+function updateSfxPickerItems() {
+  const category = document.getElementById('sfxPickerCategory').value;
+  const select = document.getElementById('sfxPickerItem');
+  const previous = selectedSfxId || select.value;
+  const items = sfxCache.filter(item => !category || item.category === category);
+  select.innerHTML = '<option value="">选择音效…</option>';
+  items.forEach(item => {
+    const option = document.createElement('option');
+    option.value = item.id;
+    option.textContent = item.name;
+    select.appendChild(option);
+  });
+  if (items.some(item => item.id === previous)) select.value = previous;
+  selectSfx();
+}
+
+function selectSfx() {
+  const select = document.getElementById('sfxPickerItem');
+  selectedSfxId = select.value;
+  const item = sfxCache.find(entry => entry.id === selectedSfxId);
+  const audio = document.getElementById('sfxPickerAudio');
+  const meta = document.getElementById('sfxPickerMeta');
+  const exportBtn = document.getElementById('sfxExportBtn');
+  if (!item) {
+    audio.removeAttribute('src'); audio.load(); meta.textContent = ''; exportBtn.disabled = true;
+    return;
+  }
+  audio.src = item.url; audio.load();
+  meta.textContent = `${item.format.toUpperCase()} · ${(item.size_bytes / 1024).toFixed(1)} KB`;
+  exportBtn.disabled = false;
+}
+
+async function exportSelectedSfx() {
+  const item = sfxCache.find(entry => entry.id === selectedSfxId);
+  if (!item) { alert('请先选择一个音效'); return; }
+  const btn = document.getElementById('sfxExportBtn');
+  btn.disabled = true; btn.textContent = '正在导出…';
+  try {
+    const response = await fetch(item.url);
+    if (!response.ok) throw new Error(response.status);
+    const blobUrl = URL.createObjectURL(await response.blob());
+    const link = document.createElement('a');
+    link.href = blobUrl;
+    link.download = `${item.name}.${item.format}`;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(blobUrl), 1000);
+  } catch (error) { alert('导出失败：' + error.message); }
+  finally { btn.disabled = false; btn.textContent = '导出所选音效'; }
 }
 
 // ---------- 角色管理 ----------
@@ -474,49 +861,20 @@ async function createChar() {
   else alert('失败：' + (await r.json()).detail);
 }
 
-// ---------- 场次批量生成 ----------
-function addLine() {
-  const box = document.getElementById('lineRows');
-  const row = document.createElement('div');
-  row.className = 'row line-row';
-  const cs = document.createElement('select'); cs.className = 'char';
-  cs.innerHTML = '<option value="">选择角色</option>';
-  charCache.forEach(c => { const o = document.createElement('option'); o.value = c.char_id; o.textContent = c.name; cs.appendChild(o); });
-  const es = document.createElement('select'); es.className = 'emo';
-  fillEmotionSelect(es, '情绪');
-  const txt = document.createElement('input'); txt.className = 'txt'; txt.placeholder = '台词…';
-  const del = document.createElement('button'); del.className = 'ghost'; del.textContent = '×';
-  del.onclick = () => row.remove();
-  row.append(cs, es, txt, del);
-  box.appendChild(row);
-}
-
-async function runBatch() {
-  const scene_name = document.getElementById('sceneName').value.trim() || '未命名场次';
-  const lines = [...document.querySelectorAll('#lineRows .line-row')].map(r => ({
-    character_id: r.querySelector('.char').value,
-    emotion: r.querySelector('.emo').value,
-    text: r.querySelector('.txt').value.trim(),
-  })).filter(l => l.character_id && l.text);
-  if (!lines.length) { alert('请至少填写一行完整的台词（角色 + 文本）'); return; }
-  const btn = document.getElementById('batchBtn'), st = document.getElementById('batchStatus');
-  btn.disabled = true;
-  st.textContent = `合成中（${lines.length} 行，每行约 10–40 秒，请勿关闭页面）…`;
-  try {
-    const r = await fetch('/api/dialogue/batch', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scene_name, lines, episode_id: curEpisode }),
-    });
-    if (!r.ok) throw new Error((await r.json()).detail || r.status);
-    const scene = await r.json();
-    st.textContent = `完成：${scene.line_count} 行已生成`;
-    loadScenes(); loadHistory();
-  } catch (e) { st.textContent = '失败：' + e.message; }
-  finally { btn.disabled = false; }
-}
-
 async function loadScenes() {
   const data = (await (await fetch('/api/dialogue/scenes')).json()).items;
+  const mergeSelect = document.getElementById('scriptMergeScene');
+  const selectedScene = mergeSelect.value;
+  mergeSelect.innerHTML = '<option value="">选择已经逐句生成的场次…</option>';
+  data.filter(scene => !scene.draft && scene.line_count > 0).forEach(scene => {
+    const option = document.createElement('option');
+    option.value = scene.scene_id;
+    option.textContent = `${scene.name} · ${scene.line_count} 句${scene.episode_name ? ' · ' + scene.episode_name : ''}`;
+    mergeSelect.appendChild(option);
+  });
+  if ([...mergeSelect.options].some(option => option.value === selectedScene)) mergeSelect.value = selectedScene;
+  mergeSelect.onchange = updateScriptMergeState;
+  updateScriptMergeState();
   const box = document.getElementById('scenes');
   if (!data.length) { box.innerHTML = '<div class="empty">暂无场次</div>'; return; }
   box.innerHTML = '';
@@ -620,6 +978,7 @@ function buildMixPanel(sceneId, existingMix) {
       <span class="stats" style="margin:0">纯对白</span>
       <audio controls preload="none" src="/api/dialogue/scenes/${sceneId}/mix/audio/dialogue" style="flex:1; height:30px"></audio>
     </div>`;
+  if (!existingMix && selectedSfxId) wrap.querySelector('.mix-sfx').value = selectedSfxId;
   wrap.querySelector('.mix-btn').onclick = async () => {
     const btn = wrap.querySelector('.mix-btn'), st = wrap.querySelector('.mix-status');
     btn.disabled = true; st.textContent = '渲染中…';
@@ -646,17 +1005,63 @@ function buildMixPanel(sceneId, existingMix) {
   return wrap;
 }
 
+let localReviewRunning = false;
+async function runLocalReview(voiceId) {
+  if (localReviewRunning) return;
+  localReviewRunning = true;
+  const button = document.getElementById('batchReviewButton');
+  const progress = document.getElementById('localReviewProgress');
+  button.disabled = true;
+  let failures = 0;
+  try {
+    const response = await fetch('/api/voices');
+    if (!response.ok) throw new Error('读取音色库失败');
+    const voices = (await response.json()).items.filter(v => voiceId ? v.voice_id === voiceId : isNewVoice(v));
+    for (const [index, voice] of voices.entries()) {
+      progress.textContent = `正在本地检查 ${index+1}/${voices.length}：${voice.name}，请勿重复提交`;
+      const result = await fetch('/api/voices/' + encodeURIComponent(voice.voice_id) + '/auto-review', {method:'POST'});
+      const report = await result.json();
+      if (!result.ok) throw new Error(report.detail || '审核请求失败');
+      if (report.errors.length) failures++;
+      await load();
+    }
+    progress.textContent = failures ? `检查结束，${failures} 个音色有未完成的检查，详见卡片` : '本地初审完成，请查看每条音色的结果';
+  } catch (e) { progress.textContent = '检查未完成：' + e.message; }
+  finally { localReviewRunning = false; button.disabled = false; }
+}
+
 // ---------- 素材库 ----------
 async function load() {
   const p = new URLSearchParams({ q: els.q.value, gender: els.gender.value, emotion: els.emotion.value });
-  const [summary, data] = await Promise.all([
+  const [summary, data, allVoices] = await Promise.all([
     fetch('/api/library/summary').then(r => r.json()),
     fetch('/api/voices?' + p).then(r => r.json()),
+    fetch('/api/voices').then(r => r.json()),
   ]);
   stats.textContent = `音色 ${summary.voices} 种 · 样本 ${summary.voice_samples} 条 · 音效 ${summary.sfx} · 环境音 ${summary.ambience}`;
   grid.innerHTML = '';
-  if (!data.items.length) { grid.innerHTML = '<div class="empty">没有匹配的音色</div>'; return; }
-  for (const v of data.items) {
+  const dragonGrid = document.getElementById('dragonVoiceGrid');
+  dragonGrid.replaceChildren();
+  if (!data.items.some(v => v.collection === '龙族人物音色')) dragonGrid.textContent = '当前筛选下没有龙族人物音色';
+  const newGrid = document.getElementById('newVoiceGrid');
+  newGrid.replaceChildren();
+  const qwenGrid = document.getElementById('qwenVoiceGrid'); qwenGrid.replaceChildren();
+  const batchVoices = allVoices.items.filter(v => v.voice_id.startsWith('v_qwen3_batch100_'));
+  document.getElementById('qwenBatchProgress').textContent = batchVoices.length ? `短剧100种批次：已入库 ${batchVoices.length}/100，其中 ${batchVoices.filter(v => v.review_status === 'needs_review').length} 个待复核。点击刷新查看新结果；自动初审不等于人工通过。` : '';
+  const newQuery = document.getElementById('newVoiceSearch').value.trim().toLowerCase();
+  const newGender = document.getElementById('newVoiceGender').value;
+  const newAge = document.getElementById('newVoiceAge').value;
+  const newItems = allVoices.items.filter(v => isNewVoice(v)
+    && (!newGender || v.gender === newGender) && (!newAge || v.age_group === newAge)
+    && (!newQuery || [v.name, v.description, ...(v.timbre_tags || [])].join(' ').toLowerCase().includes(newQuery)));
+  const qwenCount = newItems.filter(v => v.collection === '音色库新千问三').length;
+  document.getElementById('newVoiceCount').textContent = `当前显示 ${newItems.length-qwenCount} 个音色`;
+  document.getElementById('qwenVoiceCount').textContent = `当前显示 ${qwenCount} 个音色`;
+  if (newItems.length === qwenCount) newGrid.textContent = '没有匹配的VoxCPM2音色';
+  if (!qwenCount) qwenGrid.textContent = '没有匹配的千问三音色';
+  const oldItems = data.items.filter(v => !isNewVoice(v));
+  if (!oldItems.some(v => v.collection !== '龙族人物音色')) grid.textContent = '没有匹配的通用音色';
+  for (const v of [...oldItems, ...newItems]) {
     const card = document.createElement('div'); card.className = 'card';
     const genderText = { male: '男声', female: '女声', unknown: '待确认' }[v.gender] || v.gender;
     const warn = v.known_issues.length ? `<span class="tag warn">${v.known_issues.length} 条待复核</span>` : '';
@@ -665,23 +1070,164 @@ async function load() {
       : ultimateCount ? `<span class="tag gen">极致 ${ultimateCount}</span>` : '<span class="tag">可控克隆</span>';
     card.innerHTML = `<h2>${v.name} <span class="tag">${genderText}</span> <span class="tag">${v.version}</span> ${gen} ${warn}</h2>
       <div class="desc">${v.description || ''} · ${v.voice_id}</div>`;
+    const emotions = document.createElement('div');
+    emotions.className = 'desc';
+    emotions.textContent = '已有情绪：' + ([...new Set(v.samples.map(s => s.emotion).filter(Boolean))].join('、') || '暂无情绪样本');
+    card.appendChild(emotions);
+    if (isNewVoice(v)) {
+      const tags = document.createElement('div');
+      for (const label of [`性别：${genderText}`, `年龄段：${v.age_group || '未标注'}`, ...(v.timbre_tags || []).map(t => '音色特点：' + t)]) {
+        const tag = document.createElement('span');
+        tag.className = 'tag'; tag.textContent = label; tags.appendChild(tag);
+      }
+      card.appendChild(tags);
+      const review = document.createElement('div');
+      const badge = document.createElement('span');
+      badge.className = 'tag' + (v.review_status === 'needs_review' ? ' warn' : '');
+      badge.textContent = {unreviewed:'未试听', needs_review:'待复核', approved:'已通过（人工）'}[v.review_status] || '未试听';
+      review.appendChild(badge);
+      const technical = document.createElement('div'); technical.className = 'desc';
+      technical.textContent = v.technical_review ? '技术检查：' + (v.technical_review.issues.length ? v.technical_review.issues.join('；') : '未发现静音或明显削波风险') + '（不代表试听通过）' : '尚未做技术检查';
+      review.appendChild(technical);
+      const auto = document.createElement('div'); auto.className = 'desc';
+      const report = v.auto_review;
+      if (report) {
+        const flag = document.createElement('span');
+        flag.className = 'tag' + (report.status !== 'no_findings' ? ' warn' : '');
+        flag.textContent = {needs_review:'自动初审：待复核', incomplete:'自动初审：未完成', no_findings:'自动初审：未发现异常（非人工通过）'}[report.status];
+        auto.appendChild(flag);
+        const details = document.createElement('div');
+        const scores = report.samples.filter(s => s.listening).map(s => `自然度预测 ${s.listening.naturalness.toFixed(2)}（参考1–5，初筛阈值${s.listening.threshold}）`);
+        details.textContent = [report.checked_at, ...scores, ...report.issues, ...report.errors].join(' · ');
+        auto.appendChild(details);
+        const metrics = document.createElement('details');
+        const summary = document.createElement('summary'); summary.textContent = '查看检查指标与适用范围';
+        const values = document.createElement('pre'); values.style.whiteSpace = 'pre-wrap';
+        values.textContent = JSON.stringify(report.samples, null, 2); metrics.append(summary, values); auto.appendChild(metrics);
+      } else { auto.textContent = '尚未运行本地音频＋听感初审'; }
+      const check = document.createElement('button'); check.className = 'ghost'; check.textContent = '本地初审此音色';
+      check.onclick = () => runLocalReview(v.voice_id); auto.appendChild(check); review.appendChild(auto);
+      const status = document.createElement('select'); status.setAttribute('aria-label', v.name + '审核状态');
+      for (const [value, label] of [['unreviewed','未试听'],['needs_review','待复核'],['approved','已通过（人工试听）']]) status.add(new Option(label, value));
+      status.value = v.review_status || 'unreviewed'; review.appendChild(status);
+      const notes = document.createElement('textarea'); notes.placeholder = '问题说明：如发音错误、断句异常、音色不符、噪声等';
+      notes.setAttribute('aria-label', v.name + '审核说明'); notes.maxLength = 2000;
+      notes.value = v.review_notes || ''; notes.style.width = '100%'; review.appendChild(notes);
+      const save = document.createElement('button'); save.className = 'ghost'; save.textContent = '保存审核';
+      const result = document.createElement('span'); result.setAttribute('role','status');
+      save.onclick = async () => {
+        save.disabled = true;
+        try {
+          const response = await fetch('/api/voices/' + encodeURIComponent(v.voice_id) + '/review', {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({status:status.value, notes:notes.value})});
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.detail || '保存失败');
+          badge.textContent = status.selectedOptions[0].textContent;
+          badge.className = 'tag' + (status.value === 'needs_review' ? ' warn' : '');
+          const compactBadge = card.querySelector('.compact-review');
+          if (compactBadge) { compactBadge.textContent = badge.textContent; compactBadge.className = badge.className + ' compact-review'; }
+          result.textContent = '已保存';
+        } catch (e) { result.textContent = e.message; }
+        finally { save.disabled = false; }
+      };
+      review.append(save, result); card.appendChild(review);
+    }
     for (const s of v.samples) {
       const row = document.createElement('div'); row.className = 'sample';
       const note = (s.notes && s.notes.length) ? ` <span class="note" title="${s.notes.join('；')}">⚠</span>` : '';
       const mode = s.transcript ? '<span class="tag gen">极致</span>' : '<span class="tag">可控</span>';
       row.innerHTML = `<span class="emo">${s.emotion}${note}</span>${mode}<audio controls preload="none" src="${s.url}"></audio>`;
+      const useButton = document.createElement('button');
+      useButton.className = 'ghost';
+      useButton.textContent = '使用';
+      useButton.setAttribute('aria-label', `使用${v.name}的${s.emotion}音色`);
+      useButton.onclick = () => {
+        document.querySelector('input[name="ttsSource"][value="library"]').checked = true;
+        document.getElementById('ttsVoice').value = v.voice_id;
+        document.getElementById('ttsMode').value = 'auto';
+        document.getElementById('ttsPromptText').value = '';
+        updateReferenceSource();
+        document.getElementById('ttsEmotion').value = s.emotion || '';
+        updateTtsModeHint();
+        document.getElementById('voxcpmPanel').scrollIntoView({behavior:'smooth', block:'start'});
+      };
+      row.appendChild(useButton);
       card.appendChild(row);
     }
-    grid.appendChild(card);
+    if (isNewVoice(v)) {
+      card.classList.add('voice-compact');
+      const heading = card.querySelector('h2');
+      heading.textContent = v.name;
+      const details = document.createElement('details');
+      const summary = document.createElement('summary'); summary.textContent = '查看详情与审核'; details.appendChild(summary);
+      for (const child of [...card.children]) {
+        if (child !== heading && !child.classList.contains('sample')) details.appendChild(child);
+      }
+      const brief = document.createElement('div'); brief.className = 'voice-brief';
+      brief.textContent = [genderText, v.age_group, ...(v.timbre_tags || []).slice(0, 2)].filter(Boolean).join(' · ');
+      const compactBadge = document.createElement('span');
+      const needsReview = v.review_status === 'needs_review' || v.auto_review?.status === 'needs_review';
+      compactBadge.className = 'tag compact-review' + (needsReview ? ' warn' : '');
+      compactBadge.textContent = v.review_status === 'approved' ? '已通过（人工）' : needsReview ? '待复核' : '未试听';
+      heading.after(brief); brief.after(compactBadge);
+      card.appendChild(details);
+      (v.collection === '音色库新千问三' ? qwenGrid : newGrid).appendChild(card);
+    } else if (v.collection === '龙族人物音色') {
+      const selection = document.createElement('div'); selection.className = 'desc';
+      selection.textContent = v.selection_status === 'confirmed' ? '已确认' : '候选音色 · 待试听确认';
+      card.prepend(selection);
+      dragonGrid.appendChild(card);
+    } else {
+      grid.appendChild(card);
+    }
   }
 }
 
 // ---------- 单句合成与生成记录 ----------
+function usesVoiceLibrary() {
+  return document.querySelector('input[name="ttsSource"]:checked').value === 'library';
+}
+
+function updateReferenceSource() {
+  const useLibrary = usesVoiceLibrary();
+  document.getElementById('ttsLibraryReference').hidden = !useLibrary;
+  document.getElementById('ttsVoice').disabled = !useLibrary;
+  document.getElementById('ttsPromptText').disabled = !useLibrary;
+  const mode = document.getElementById('ttsMode');
+  for (const option of mode.options) {
+    option.disabled = !useLibrary && ['ultimate_clone', 'controllable_clone'].includes(option.value);
+  }
+  if (mode.selectedOptions[0].disabled) mode.value = 'auto';
+  updateReferenceEmotions();
+}
+
+function updateReferenceEmotions() {
+  const select = document.getElementById('ttsEmotion');
+  const previous = select.value;
+  const voice = voiceCache.find(v => v.voice_id === document.getElementById('ttsVoice').value);
+  select.replaceChildren(new Option('参考样本情绪（默认首个）', ''));
+  for (const emotion of new Set((voice?.samples || []).map(s => s.emotion).filter(Boolean))) {
+    select.add(new Option(emotion, emotion));
+  }
+  if ([...select.options].some(o => o.value === previous)) select.value = previous;
+  select.disabled = !usesVoiceLibrary() || !voice;
+  updateTtsModeHint();
+}
+
 function updateTtsModeHint() {
   const mode = document.getElementById('ttsMode').value;
-  const voice = voiceCache.find(v => v.voice_id === document.getElementById('ttsVoice').value);
+  const voice = usesVoiceLibrary() && voiceCache.find(v => v.voice_id === document.getElementById('ttsVoice').value);
   const emotion = document.getElementById('ttsEmotion').value;
   const sample = voice && (voice.samples.find(s => !emotion || s.emotion === emotion) || voice.samples[0]);
+  const referenceAudio = document.getElementById('ttsReferenceAudio');
+  if (sample && sample.url) {
+    referenceAudio.src = sample.url;
+  } else {
+    referenceAudio.removeAttribute('src');
+  }
+  referenceAudio.load();
+  const control = document.getElementById('ttsControl');
+  control.disabled = mode === 'ultimate_clone';
+  control.title = mode === 'ultimate_clone' ? '极致克隆使用参考音频及转录，不使用控制描述' : '';
   let msg = {
     auto: '自动模式：有精确转录的音色优先走极致克隆，否则走可控克隆。',
     ultimate_clone: '极致克隆：参考音频 + 精确转录，最大化还原音色、节奏和风格；括号风格指令会被忽略。',
@@ -689,13 +1235,20 @@ function updateTtsModeHint() {
     design: '音色设计：不使用参考音频，请在台词开头写（音色描述）。',
     basic: '基础 TTS：不绑定固定音色。',
   }[mode];
+  if (!usesVoiceLibrary()) msg = '不使用库内参考音频。' + (mode === 'auto' ? '自动模式将使用音色设计或基础 TTS。' : msg);
   if (sample) msg += sample.transcript ? ` 当前样本已有转录：${sample.transcript}` : ' 当前样本没有转录，只能使用可控克隆或手工填写转录覆盖。';
   document.getElementById('ttsModeHint').textContent = msg;
 }
 
 async function generate() {
-  const text = document.getElementById('ttsText').value.trim();
-  if (!text) return;
+  const targetText = document.getElementById('ttsText').value.trim();
+  if (!targetText) return;
+  if (usesVoiceLibrary() && !document.getElementById('ttsVoice').value) {
+    document.getElementById('genStatus').textContent = '请先选择库内音色，或切换为“不使用库内音频”。';
+    return;
+  }
+  const mode = document.getElementById('ttsMode').value;
+  const control = document.getElementById('ttsControl').value.trim().replace(/[()（）]/g, '');
   const btn = document.getElementById('ttsBtn'), status = document.getElementById('genStatus');
   btn.disabled = true;
   status.textContent = '合成中（首次需加载模型约 15–30s）…';
@@ -704,10 +1257,11 @@ async function generate() {
     const r = await fetch('/api/tts/generate', {
       method: 'POST', headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        text, voice_id: document.getElementById('ttsVoice').value,
-        emotion: document.getElementById('ttsEmotion').value,
-        mode: document.getElementById('ttsMode').value,
-        prompt_text: document.getElementById('ttsPromptText').value.trim(),
+        text: targetText, control_instruction: control,
+        voice_id: usesVoiceLibrary() ? document.getElementById('ttsVoice').value : '',
+        emotion: usesVoiceLibrary() ? document.getElementById('ttsEmotion').value : '',
+        mode,
+        prompt_text: usesVoiceLibrary() ? document.getElementById('ttsPromptText').value.trim() : '',
         normalize: document.getElementById('ttsNormalize').checked,
         denoise: document.getElementById('ttsDenoise').checked,
         seed: seedRaw === '' ? null : parseInt(seedRaw),
@@ -717,7 +1271,8 @@ async function generate() {
     if (!r.ok) throw new Error((await r.json()).detail || r.status);
     const rec = await r.json();
     const box = document.getElementById('ttsResult');
-    box.style.display = 'flex';
+    box.style.display = 'block';
+    document.getElementById('ttsResultEmpty').style.display = 'none';
     document.getElementById('ttsAudio').src = `/api/tts/records/${rec.record_id}/audio`;
     document.getElementById('ttsMeta').textContent = `${rec.mode} · ${rec.duration_sec}s · seed=${rec.seed}`;
     status.textContent = '完成';
@@ -760,9 +1315,12 @@ for (const el of Object.values(els)) {
 }
 document.getElementById('projSelect').addEventListener('change', loadEpisodes);
 document.getElementById('epSelect').addEventListener('change', e => { curEpisode = e.target.value; updateBatchEp(); loadScenes(); });
-document.getElementById('ttsVoice').addEventListener('change', updateTtsModeHint);
+document.getElementById('ttsVoice').addEventListener('change', updateReferenceEmotions);
 document.getElementById('ttsEmotion').addEventListener('change', updateTtsModeHint);
-boot();
+boot().catch(() => {
+  document.getElementById('genStatus').textContent = '音频库加载失败，请确认后台运行后刷新页面。';
+  stats.textContent = '音频库加载失败，请刷新页面重试。';
+});
 </script>
 </body>
 </html>

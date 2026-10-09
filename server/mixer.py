@@ -91,7 +91,10 @@ def render_scene_mix(scene_id: str, config: dict) -> dict:
         amb_item = next((a for a in library.get_library()["ambience"] if a["id"] == amb_cfg["id"]), None)
         if amb_item is None:
             raise ValueError(f"环境音不存在: {amb_cfg['id']}")
-        amb_path = library.ASSETS_ROOT / "ambience" / (amb_cfg["id"] + ".wav")
+        amb_path = library.resolve_asset_file(
+            "ambience", amb_item.get("path") or (amb_cfg["id"] + ".wav"))
+        if amb_path is None:
+            raise ValueError(f"环境音文件缺失: {amb_cfg['id']}")
         amb = _fade(_loop_to(_load_wav(amb_path), total)) * float(amb_cfg.get("volume", 0.4))
         mix = mix + amb
         amb_used = {"id": amb_cfg["id"], "volume": float(amb_cfg.get("volume", 0.4))}
@@ -102,7 +105,10 @@ def render_scene_mix(scene_id: str, config: dict) -> dict:
         sfx_item = next((s for s in library.get_library()["sfx"] if s["id"] == item["id"]), None)
         if sfx_item is None:
             raise ValueError(f"音效不存在: {item['id']}")
-        sfx_path = library.ASSETS_ROOT / "sfx" / (item["id"] + ".wav")
+        sfx_path = library.resolve_asset_file(
+            "sfx", sfx_item.get("path") or (item["id"] + ".wav"))
+        if sfx_path is None:
+            raise ValueError(f"音效文件缺失: {item['id']}")
         wav = _load_wav(sfx_path) * float(item.get("volume", 0.8))
         at_line = int(item.get("at_line", 0))
         start = line_offsets[min(at_line, len(line_offsets) - 1)] if line_offsets else 0
